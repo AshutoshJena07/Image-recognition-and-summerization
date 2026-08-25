@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Data and trained models (keep these out of git)
+data/raw/*
+data/processed/*
+data/cache/*
+models/*.pt
+models/*.pth
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/cache/.gitkeep
+!models/.gitkeep
+
+# Application output
+outputs/*
+!outputs/.gitkeep
+.streamlit/secrets.toml
+
+# Downloaded local Hugging Face model cache
+hf_cache/

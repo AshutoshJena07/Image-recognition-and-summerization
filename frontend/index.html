@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Assistant</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Image Assistant home"><span class="brand-mark">✦</span></a>
+      </header>
+
+      <section id="conversation" class="conversation" aria-live="polite">
+        <div class="welcome" id="welcome">
+          <div class="orb" aria-hidden="true">✦</div>
+          <p class="eyebrow">IMAGE INTELLIGENCE</p>
+          <h1>What would you like to know<br />about an image?</h1>
+          <p class="subtitle">Upload an image, then ask for a summary, objects, activity, or a caption.</p>
+          <div class="suggestions">
+            <button class="suggestion" type="button">Describe this image in detail</button>
+            <button class="suggestion" type="button">What objects are visible?</button>
+            <button class="suggestion" type="button">Write a creative caption</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="composer-wrap" aria-label="Ask about an image">
+        <div id="preview" class="preview hidden">
+          <img id="preview-image" alt="Selected upload" />
+          <span><strong id="preview-name"></strong><small>Active image — ask as many follow-up questions as you want</small></span>
+          <button id="remove-image" type="button" aria-label="Remove image">×</button>
+        </div>
+        <form id="prompt-form" class="composer">
+          <input id="image-input" type="file" accept="image/jpeg,image/png,image/webp" hidden />
+          <button id="attach-button" class="icon-button" type="button" aria-label="Attach image" title="Attach image">+</button>
+          <textarea id="prompt-input" rows="1" placeholder="Ask about an image..." aria-label="Your image instruction"></textarea>
+          <button id="send-button" class="send-button" type="submit" aria-label="Send message" disabled>
+            <span>↑</span>
+          </button>
+        </form>
+        <p class="privacy-note">Just animate the cursor and see magic</p>
+      </section>
+    </main>
+    <script src="/assets/app.js"></script>
+  </body>
+</html>
