@@ -39,18 +39,20 @@ def health() -> dict[str, str]:
 
 @app.post("/analyze")
 async def analyze_image(
-    image: UploadFile = File(..., description="A JPG, JPEG, PNG, or WEBP image"),
+    image: UploadFile = File(None, description="A JPG, JPEG, PNG, or WEBP image"),
     prompt: str = Form(DEFAULT_PROMPT, description="Question or instruction about the image"),
     history: str = Form("[]", description="Recent chat turns supplied by the local browser"),
 ) -> dict[str, str]:
     """Return a response generated from the image and the user's prompt."""
-    if image.content_type not in {"image/jpeg", "image/png", "image/webp"}:
-        raise HTTPException(status_code=415, detail="Upload a JPG, PNG, or WEBP image.")
+    uploaded_image = None
+    if image is not None:
+        if image.content_type not in {"image/jpeg", "image/jpg", "image/png", "image/webp", "image/pjpeg"}:
+            raise HTTPException(status_code=415, detail="Upload a JPG, PNG, or WEBP image.")
 
-    try:
-        uploaded_image = Image.open(BytesIO(await image.read())).convert("RGB")
-    except UnidentifiedImageError as exc:
-        raise HTTPException(status_code=400, detail="The uploaded file is not a valid image.") from exc
+        try:
+            uploaded_image = Image.open(BytesIO(await image.read())).convert("RGB")
+        except UnidentifiedImageError as exc:
+            raise HTTPException(status_code=400, detail="The uploaded file is not a valid image.") from exc
 
     try:
         parsed_history = json.loads(history)
@@ -66,6 +68,8 @@ async def analyze_image(
 
     try:
         answer = get_vision_assistant().answer(uploaded_image, prompt, safe_history)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except OSError as exc:
         raise HTTPException(
             status_code=503,
