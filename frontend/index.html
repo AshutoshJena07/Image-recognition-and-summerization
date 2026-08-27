@@ -9,8 +9,15 @@
   <body>
     <main class="app-shell">
       <header class="topbar">
-        <a class="brand" href="/" aria-label="Image Assistant home"><span class="brand-mark">✦</span></a>
+        <a class="brand" href="/" aria-label="Image Assistant home"><span class="brand-mark">✦</span> <span>Image Assistant</span></a>
+        <div class="topbar-actions">
+          <button id="auto-speak-toggle" class="toggle-button" type="button" aria-pressed="false" title="Toggle Auto Read-Aloud">
+            <span class="speaker-icon">🔊</span>
+            <span class="toggle-label">Auto-Speak</span>
+          </button>
+        </div>
       </header>
+
 
       <section id="conversation" class="conversation" aria-live="polite">
         <div class="welcome" id="welcome">
@@ -26,23 +33,24 @@
         </div>
       </section>
 
-      <section class="composer-wrap" aria-label="Ask about an image">
+      <section class="composer-wrap" aria-label="Ask about a file">
         <div id="preview" class="preview hidden">
           <img id="preview-image" alt="Selected upload" />
-          <span><strong id="preview-name"></strong><small>Active image — ask as many follow-up questions as you want</small></span>
-          <button id="remove-image" type="button" aria-label="Remove image">×</button>
+          <span><strong id="preview-name"></strong><small>Active file — ask any question or command about this file</small></span>
+          <button id="remove-image" type="button" aria-label="Remove file">×</button>
         </div>
         <form id="prompt-form" class="composer">
-          <input id="image-input" type="file" accept="image/jpeg,image/png,image/webp" hidden />
-          <button id="attach-button" class="icon-button" type="button" aria-label="Attach image" title="Attach image">+</button>
-          <textarea id="prompt-input" rows="1" placeholder="Ask about an image..." aria-label="Your image instruction"></textarea>
+          <input id="image-input" type="file" accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.json,.md,.py,.js,.html,.css,.log" hidden />
+          <button id="attach-button" class="icon-button" type="button" aria-label="Attach file" title="Attach image, video, PDF, Word, Excel, PPT or code file">📎</button>
+          <textarea id="prompt-input" rows="1" placeholder="Ask anything about an image, document, video, or file..." aria-label="Your instruction"></textarea>
           <button id="send-button" class="send-button" type="submit" aria-label="Send message" disabled>
             <span>↑</span>
           </button>
         </form>
-        <p class="privacy-note">Just animate the cursor and see magic</p>
+        <p class="privacy-note">Universal AI assistant — supports Images, Videos, PDFs, Word, Excel, PPT & Code files</p>
       </section>
     </main>
+
     <script src="/assets/app.js"></script>
   </body>
 </html>

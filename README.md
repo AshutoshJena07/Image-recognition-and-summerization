@@ -63,7 +63,7 @@ The first use of each BLIP model downloads it to `hf_cache/`. This download need
 ## Run the backend
 
 ```powershell
-python -m uvicorn src.image_analytics.api:app --reload
+python -m uvicorn src.image_analytics.api:app --reload --reload-dir src
 ```
 
 The browser interface starts at `http://127.0.0.1:8000`. Interactive API documentation is also available at `http://127.0.0.1:8000/docs`.

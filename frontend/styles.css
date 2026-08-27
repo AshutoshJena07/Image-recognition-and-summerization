@@ -61,4 +61,40 @@ textarea::placeholder { color: #858490; }
 .typing { display: flex; align-items: center; gap: 5px; height: 30px; }
 .typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
 .error { color: #ffaaa6; }
-@media (max-width: 600px) { .app-shell { padding: 0 16px; }.conversation { padding-top: 55px; }.suggestions { align-items: stretch; flex-direction: column; }.suggestion { text-align: left; }.composer-wrap { width: calc(100% - 20px); }.topbar { height: 64px; } }
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+.toggle-button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--muted); font-size: 12px; font-weight: 550; transition: all 0.2s ease; cursor: pointer; }
+.toggle-button:hover { background: rgba(255,255,255,.08); color: var(--text); border-color: rgba(255,255,255,.2); }
+.toggle-button.active { background: rgba(130,110,255,.18); color: var(--accent); border-color: var(--accent-strong); box-shadow: 0 0 12px rgba(130,110,255,.25); }
+
+.message-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+.message-actions { display: flex; align-items: center; gap: 4px; }
+.action-btn { border: none; background: transparent; color: var(--muted); padding: 2px 6px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.15s ease; opacity: 0.8; }
+.action-btn:hover { opacity: 1; color: var(--accent); background: rgba(255,255,255,.08); transform: scale(1.08); }
+.speech-btn.speaking { color: var(--accent); animation: pulse-speaker 1.2s infinite ease-in-out; opacity: 1; }
+.copy-btn.copied { color: #88ffb4; font-weight: bold; }
+
+@keyframes pulse-speaker {
+  0% { transform: scale(1); filter: drop-shadow(0 0 2px var(--accent-strong)); }
+  50% { transform: scale(1.18); filter: drop-shadow(0 0 8px var(--accent)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 2px var(--accent-strong)); }
+}
+
+.user-file-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 10px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(130, 110, 255, 0.14);
+  border: 1px solid rgba(180, 167, 255, 0.3);
+  color: #edeaff;
+  font-size: 13px;
+  font-weight: 550;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+

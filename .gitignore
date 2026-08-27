@@ -22,5 +22,8 @@ outputs/*
 !outputs/.gitkeep
 .streamlit/secrets.toml
 
+# Local databases
+*.db
+
 # Downloaded local Hugging Face model cache
 hf_cache/

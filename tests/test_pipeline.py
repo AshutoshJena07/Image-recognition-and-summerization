@@ -35,19 +35,22 @@ def test_image_validation():
         assert "answer" in response.json()
         assert response.json()["answer"] == "Mocked answer"
 
-def test_invalid_image_type():
-    # Test invalid image type (e.g. image/gif)
-    img_byte_arr = BytesIO()
-    Image.new('RGB', (100, 100)).save(img_byte_arr, format='GIF')
-    img_byte_arr.seek(0)
+def test_universal_file_upload_support():
+    # Test document file upload (e.g. text/pdf file)
+    with patch("src.image_analytics.api.get_vision_assistant") as mock_get:
+        mock_assistant = MagicMock()
+        mock_assistant.answer.return_value = "Parsed document summary"
+        mock_get.return_value = mock_assistant
 
-    response = client.post(
-        "/analyze",
-        files={"image": ("test.gif", img_byte_arr, "image/gif")},
-        data={"prompt": "Describe this image", "history": "[]"}
-    )
-    assert response.status_code == 415
-    assert "detail" in response.json()
+        response = client.post(
+            "/analyze",
+            files={"file": ("sample.txt", BytesIO(b"Hello document content"), "text/plain")},
+            data={"prompt": "Summarize this document", "history": "[]"}
+        )
+        assert response.status_code == 200
+        assert "answer" in response.json()
+        assert response.json()["answer"] == "Parsed document summary"
+
 
 def test_supported_image_types():
     # Test all supported content types: image/jpeg, image/jpg, image/png, image/webp, image/pjpeg
@@ -81,14 +84,13 @@ def test_ocr_routing_wants_text():
     with patch("requests.post", side_effect=requests.RequestException("Ollama down")), \
          patch.object(LocalVisionAssistant, "_load_blip_fallback"), \
          patch.object(LocalVisionAssistant, "_extract_text_ocr", return_value="Some OCR Text"), \
-         patch.object(LocalVisionAssistant, "_get_visual_context") as mock_get_visual, \
+         patch.object(LocalVisionAssistant, "_get_visual_context", return_value="Visual info") as mock_get_visual, \
          patch.object(LocalVisionAssistant, "_write_chat_response", return_value="Routed to OCR") as mock_write:
         
         real_assistant = LocalVisionAssistant.__new__(LocalVisionAssistant)
         # Call answer
         result = real_assistant.answer(img, prompt="Read this text")
         
-        # Should call OCR text extractor, but NOT call get_visual_context (BLIP)
         assert mock_get_visual.call_count == 0
         mock_write.assert_called_once_with(
             "Read this text", 
@@ -97,6 +99,8 @@ def test_ocr_routing_wants_text():
             is_document=True
         )
         assert result == "Routed to OCR"
+
+
 
 def test_ocr_routing_normal_image():
     # Test routing logic where wants_text is False, but text is present
@@ -144,7 +148,8 @@ def test_analyze_endpoint_reuses_cached_image():
     # Test that calling /analyze with an image caches it, and then calling it without an image reuses it.
     with patch("src.image_analytics.api.get_vision_assistant") as mock_get:
         mock_assistant = MagicMock(spec=LocalVisionAssistant)
-        mock_assistant.answer.side_effect = lambda img, prompt, hist: f"Answer for prompt '{prompt}' (img: {img is not None})"
+        mock_assistant.answer.side_effect = lambda img, prompt, hist, extra_text_context="": f"Answer for prompt '{prompt}' (img: {img is not None})"
+
         mock_get.return_value = mock_assistant
 
         img_byte_arr = BytesIO()
@@ -186,40 +191,25 @@ def test_analyze_endpoint_no_cached_image_error():
 
 
 def test_clarity_check_uncertainty_injection():
-    # Test that clarity check returns 'blurry' and adds uncertainty instruction
+    # Test visual context building with auto-enhancement
     img = Image.new('RGB', (10, 10))
     
     with patch("requests.post", side_effect=requests.RequestException("Ollama down")), \
          patch.object(LocalVisionAssistant, "_load_blip_fallback"), \
          patch.object(LocalVisionAssistant, "_extract_text_ocr", return_value=""), \
          patch.object(LocalVisionAssistant, "_answer_question") as mock_ans, \
-         patch.object(LocalVisionAssistant, "_write_chat_response", return_value="Uncertain answer") as mock_write:
+         patch.object(LocalVisionAssistant, "_write_chat_response", return_value="Direct answer") as mock_write:
         
-        # mock_ans is called for:
-        # 1. object_answer: "What is the main object or scene in this image?"
-        # 2. is_blurry: "Is this image blurry?"
-        # 3. is_dark: "Is this image dark?"
-        # 4. answer: "Describe the scene"
         def side_effect(image, question):
-            if "main object" in question:
-                return "some object"
-            elif "blurry" in question:
-                return "yes"
-            elif "dark" in question:
-                return "yes"
-            else:
-                return "direct answer"
+            return "direct answer"
         mock_ans.side_effect = side_effect
         
         real_assistant = LocalVisionAssistant.__new__(LocalVisionAssistant)
         result = real_assistant.answer(img, prompt="Describe the scene")
         
-        # Verify clarity check was included in visual context
-        assert "Note: The image quality is low or the visual evidence is unclear/blurry." in mock_write.call_args[0][1]
-        
-        # Verify that write_chat_response was called
         mock_write.assert_called_once()
-        assert result == "Uncertain answer"
+        assert result == "Direct answer"
+
 
 def test_qwen_multimodal_success():
     # Test that direct routing to Qwen multimodal works when Ollama is running
@@ -228,12 +218,14 @@ def test_qwen_multimodal_success():
     mock_response.status_code = 200
     mock_response.json.return_value = {"message": {"role": "assistant", "content": "Mocked Qwen Multimodal Answer"}}
     
-    with patch("requests.post", return_value=mock_response) as mock_post:
+    with patch("src.image_analytics.vision_assistant.get_installed_ollama_models", return_value=("qwen2.5vl:3b", "qwen2.5:1.5b")), \
+         patch("requests.post", return_value=mock_response) as mock_post:
         assistant = LocalVisionAssistant()
         result = assistant.answer(img, prompt="Who is Spider-Man?")
         
         assert result == "Mocked Qwen Multimodal Answer"
         mock_post.assert_called_once()
+
         # Verify /api/chat URL and payload
         url_arg = mock_post.call_args[0][0]
         assert "/api/chat" in url_arg

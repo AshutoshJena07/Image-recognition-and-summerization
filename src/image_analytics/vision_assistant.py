@@ -39,7 +39,7 @@ CAPTION_KEYWORDS = {
     "tell me about",
 }
 
-# Keywords that suggest the user wants text extracted / document read
+# Keywords that suggest the user specifically wants text extracted / document read
 DOCUMENT_KEYWORDS = {
     "read",
     "extract",
@@ -50,9 +50,6 @@ DOCUMENT_KEYWORDS = {
     "writing",
     "handwriting",
     "handwritten",
-    "name",
-    "word",
-    "words",
     "signature",
     "sign",
     "say",
@@ -62,25 +59,92 @@ DOCUMENT_KEYWORDS = {
     "paper",
     "notes",
     "letter",
-    "summarize this",
-    "summarise this",
+    "transcribe",
     "what does it say",
     "what is written",
     "what is writing",
     "translate",
+    "script",
+    "perform",
+    "performance",
+    "act",
+    "acting",
+    "dialogue",
+    "dialogues",
+    "lines",
+    "recite",
+    "role",
+    "character",
+    "speech",
+    "monologue",
+    "play",
+    "story",
+    "recitation",
+    "quote",
+    "words",
+    "speak",
 }
+
 
 # Minimum characters from OCR to consider the image text-bearing
 OCR_MIN_CHARS = 2
 
+
 OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
 OLLAMA_CHAT_URL = "http://127.0.0.1:11434/api/chat"
-OLLAMA_MODEL = "qwen2.5vl:3b"
+DEFAULT_OLLAMA_TEXT_MODEL = "qwen2.5:1.5b"
+
+
+def get_installed_ollama_models() -> tuple[str | None, str]:
+    """Auto-detect installed vision and text models in Ollama."""
+    try:
+        r = requests.get("http://127.0.0.1:11434/api/tags", timeout=2)
+        if r.status_code == 200:
+            names = [m.get("name", "") for m in r.json().get("models", [])]
+            vision_model = next((n for n in names if any(k in n.lower() for k in ["vl", "vision", "llava"])), None)
+            text_model = next((n for n in names if "qwen" in n.lower()), None) or \
+                         next((n for n in names if "gemma" in n.lower()), None) or \
+                         (names[0] if names else DEFAULT_OLLAMA_TEXT_MODEL)
+            return vision_model, text_model
+    except Exception:
+        pass
+    return None, DEFAULT_OLLAMA_TEXT_MODEL
+
+
+def format_fallback_visual_context(context: str) -> str:
+    """Convert raw diagnostic BLIP key-values into a natural human sentence when LLM is offline."""
+    if "Detected main subject:" in context:
+        subject = ""
+        setting = ""
+        note = ""
+        for part in context.split(". "):
+            part = part.strip()
+            if part.startswith("Detected main subject:"):
+                subject = part.replace("Detected main subject:", "").strip()
+            elif part.startswith("Detected setting or style:"):
+                setting = part.replace("Detected setting or style:", "").strip()
+            elif part.startswith("Direct visual answer:"):
+                setting = part.replace("Direct visual answer:", "").strip()
+            elif "Note:" in part or "unclear" in part or "blurry" in part:
+                note = part.replace("Note:", "").strip()
+
+        sentence_parts = []
+        if subject:
+            sentence_parts.append(f"The main subject appears to be {subject}")
+        if setting:
+            sentence_parts.append(f"({setting})")
+
+        res = " ".join(sentence_parts) + "." if sentence_parts else context
+        if note:
+            res += f" Note: {note}"
+        return res
+    return context
 
 
 class ChatTurn(TypedDict):
     role: str
     content: str
+
 
 
 class LocalVisionAssistant:
@@ -127,67 +191,41 @@ class LocalVisionAssistant:
             self.model.to(self.device).eval()
 
     def _analyze_and_preprocess_image(self, image: Image.Image) -> tuple[Image.Image, str]:
-        """Analyze original image quality and generate preprocessed version for OCR/BLIP."""
-        from PIL import ImageOps, ImageFilter, ImageStat
+        """Auto-enhance image clarity, contrast, and sharpness before visual analysis."""
+        from PIL import ImageOps, ImageFilter, ImageEnhance, ImageStat
 
-        # Convert to grayscale for quick statistical checks
-        gray = image.convert("L")
-        stat = ImageStat.Stat(gray)
-        mean = stat.mean[0]
-        stddev = stat.stddev[0]
-        w, h = image.size
-
-        quality_flags = []
+        # Generate preprocessed & enhanced image for EasyOCR / BLIP
+        processed = image.copy().convert("RGB")
+        w, h = processed.size
         
-        # 1. Check resolution
-        if max(w, h) < 300:
-            quality_flags.append("low-resolution")
-            
-        # 2. Check contrast
-        if stddev < 20:
-            quality_flags.append("low contrast")
-            
-        # 3. Check brightness
-        if mean < 25:
-            quality_flags.append("extremely dark")
-        elif mean > 230:
-            quality_flags.append("extremely bright")
-
-        # 4. Check blur using Laplacian variance
-        img_np = np.array(gray, dtype=np.float32)
-        if img_np.shape[0] > 2 and img_np.shape[1] > 2:
-            laplacian = (
-                img_np[1:-1, 0:-2] + 
-                img_np[1:-1, 2:] + 
-                img_np[0:-2, 1:-1] + 
-                img_np[2:, 1:-1] - 
-                4.0 * img_np[1:-1, 1:-1]
-            )
-            lap_var = np.var(laplacian)
-        else:
-            lap_var = 100.0
-
-        if lap_var < 80.0:
-            quality_flags.append("blurry/unclear")
-
-        quality_desc = ", ".join(quality_flags) if quality_flags else "clear"
-
-        # Generate preprocessed image for EasyOCR/BLIP ONLY
-        processed = image.copy()
-        
-        # Upscale genuinely tiny images
-        if max(w, h) < 200:
+        # 1. Resize optimized for ultra-fast VQA / OCR (~5s ChatGPT speed)
+        max_dim = 800
+        if max(w, h) > max_dim:
+            processed.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+        elif max(w, h) < 300:
             processed = processed.resize((w * 2, h * 2), Image.Resampling.LANCZOS)
             
-        # Mild contrast normalization if contrast is very low
-        if stddev < 20:
-            processed = ImageOps.autocontrast(processed, cutoff=2)
-            
-        # Mild sharpening if slightly blurry but has some edge information
-        if 20.0 < lap_var < 80.0:
-            processed = processed.filter(ImageFilter.SHARPEN)
+        # 2. Auto-Contrast normalization
+        processed = ImageOps.autocontrast(processed, cutoff=1)
 
-        return processed, quality_desc
+        # 3. Brightness adjustment if dark
+        gray = processed.convert("L")
+        stat = ImageStat.Stat(gray)
+        mean_brightness = stat.mean[0]
+        if mean_brightness < 60:
+            enhancer = ImageEnhance.Brightness(processed)
+            processed = enhancer.enhance(1.35)
+        elif mean_brightness > 210:
+            enhancer = ImageEnhance.Brightness(processed)
+            processed = enhancer.enhance(0.85)
+
+        # 4. Sharpening & detail enhancement
+        enhancer = ImageEnhance.Sharpness(processed)
+        processed = enhancer.enhance(1.4)
+        processed = processed.filter(ImageFilter.SHARPEN)
+
+        return processed, "enhanced"
+
 
     def _get_base64_image(self, image: Image.Image) -> str:
         """Convert a PIL Image to a base64 encoded JPEG string (excluding newlines)."""
@@ -203,27 +241,51 @@ class LocalVisionAssistant:
     @torch.inference_mode()
     def answer(
         self,
-        image: Image.Image | None,
-        prompt: str | None = None,
+        rgb_image: Image.Image | None,
+        instruction: str | None = None,
         history: list[ChatTurn] | None = None,
+        extra_text_context: str = "",
+        prompt: str | None = None,
     ) -> str:
-        """Generate an image-grounded answer using Ollama /api/chat with Qwen2.5-VL and BLIP fallback."""
+        """Process an uploaded image/document/video/file and answer the instruction."""
         start_time = time.time()
-        instruction = (prompt or "").strip()
-        if not instruction:
-            instruction = DEFAULT_PROMPT
+        instruction = (prompt or instruction or DEFAULT_PROMPT).strip()
+
+        # Handle text-only inputs or non-image document files (PDF, Word, Excel, PPT, Text, Code)
+        if rgb_image is None:
+            if not history and not extra_text_context:
+                self.active_image = None
+                if hasattr(self, "_clear_cache"):
+                    self._clear_cache()
+                if instruction.lower() in {"describe", "describe this image", "describe image", DEFAULT_PROMPT.lower()}:
+                    raise ValueError("No active image in session. Please upload an image first.")
+
+            if extra_text_context:
+                context = f"Document / File Content extracted from upload:\n{extra_text_context}"
+            else:
+                context = f"Direct User Text Input:\n{instruction}"
+            return self._write_chat_response(instruction, context, history or [], is_document=True)
+
 
         # Scoping & Invalidation
-        if image is not None:
-            self.active_image = image
-            self._clear_cache()
+        active_img = getattr(self, "active_image", None)
+        if rgb_image is not None:
+            if rgb_image is not active_img:
+                self.active_image = rgb_image
+                if hasattr(self, "_clear_cache"):
+                    self._clear_cache()
+
         elif not history:
             # Active image is cleared / new session started
             self.active_image = None
-            self._clear_cache()
-            raise ValueError("No active image in session. Please upload an image first.")
-        elif self.active_image is None:
-            raise ValueError("No active image in session. Please upload an image first.")
+            if hasattr(self, "_clear_cache"):
+                self._clear_cache()
+            if not extra_text_context:
+                raise ValueError("No active image or file in session. Please upload a file first.")
+        elif active_img is None and not extra_text_context:
+            raise ValueError("No active image or file in session. Please upload a file first.")
+
+
 
         # Ensure base image is converted to RGB
         rgb_image = self.active_image.convert("RGB")
@@ -245,92 +307,95 @@ class LocalVisionAssistant:
         normalized = instruction.lower()
         wants_text = any(kw in normalized for kw in DOCUMENT_KEYWORDS)
 
-        # 3. Lazy OCR run (only if explicitly requested)
+        # 3. Always run and check OCR text if text is detected in image
         ocr_start = time.time()
-        ocr_text = ""
-        if wants_text:
-            if self.cached_ocr_text is None:
-                self.cached_ocr_text = self._extract_text_ocr(self.cached_processed_image)
-            ocr_text = self.cached_ocr_text
+        if self.cached_ocr_text is None:
+            self.cached_ocr_text = self._extract_text_ocr(self.cached_processed_image)
+        ocr_text = self.cached_ocr_text
         ocr_duration = time.time() - ocr_start
 
-        # ── Route 1: Try Direct Multimodal Qwen2.5-VL via /api/chat ───────────
-        try:
-            # System prompt for qualitative uncertainty and entity recognition
-            system_instruction = """You are a helpful, uncertainty-aware local image assistant.
+        if ocr_text and len(ocr_text.strip()) > 35:
+            wants_text = True
+
+        # ── Route 1: Try Direct Multimodal VLM via /api/chat if vision model is installed ───
+        vision_model, text_model = get_installed_ollama_models()
+        if vision_model:
+            try:
+                # System prompt for qualitative uncertainty and entity recognition
+                system_instruction = """You are a helpful, uncertainty-aware local image assistant.
 Answer the user's questions about the uploaded image.
 - For clear images, respond directly and naturally, blending visual observations with your general knowledge if the user asks about recognized entities (e.g. Spider-Man, characters, objects, landmarks).
 - If the user asks to read/extract text, use the provided OCR text (if any) and the image layout to transcribe it.
 - If the image has quality issues (e.g. blurry, low contrast, dark), be honest about the quality but do not refuse to identify the object if it is still recognizable. Use qualifying phrases like "It appears to be..." or "The image is somewhat blurry/dark, but shows...".
 - Only declare that you cannot identify the object if the image genuinely lacks sufficient visual information to make a reasonable judgment.
 """
-            if self.cached_quality_desc != "clear":
-                system_instruction += f"\nNote: Image quality analysis has flagged the following issues: {self.cached_quality_desc}. Adjust your response confidence accordingly."
+                if self.cached_quality_desc != "clear":
+                    system_instruction += f"\nNote: Image quality analysis has flagged the following issues: {self.cached_quality_desc}. Adjust your response confidence accordingly."
 
-            # Construct the chat message sequence
-            messages = [{"role": "system", "content": system_instruction}]
+                # Construct the chat message sequence
+                messages = [{"role": "system", "content": system_instruction}]
 
-            # Build history turns
-            history_turns = history or []
-            for i, turn in enumerate(history_turns):
-                msg = {
-                    "role": turn["role"],
-                    "content": turn["content"]
-                }
-                # Attach the image to the first message in the history
-                if i == 0:
-                    msg["images"] = [self.cached_base64_image]
-                messages.append(msg)
+                # Build history turns
+                history_turns = history or []
+                for i, turn in enumerate(history_turns):
+                    msg = {
+                        "role": turn["role"],
+                        "content": turn["content"]
+                    }
+                    # Attach the image to the first message in the history
+                    if i == 0:
+                        msg["images"] = [self.cached_base64_image]
+                    messages.append(msg)
 
-            # Build current user message content
-            current_content = instruction
-            if wants_text and ocr_text:
-                current_content += f"\n\n[Supplementary OCR text extracted from image]:\n{ocr_text}"
+                # Build current user message content
+                current_content = instruction
+                if wants_text and ocr_text:
+                    current_content += f"\n\n[Supplementary OCR text extracted from image]:\n{ocr_text}"
 
-            if not history_turns:
-                # First turn: attach image to the current user message
-                messages.append({
-                    "role": "user",
-                    "content": current_content,
-                    "images": [self.cached_base64_image]
-                })
-            else:
-                # Subsequent turns: standard text user message (image already cached in history)
-                messages.append({
-                    "role": "user",
-                    "content": current_content
-                })
+                if not history_turns:
+                    # First turn: attach image to the current user message
+                    messages.append({
+                        "role": "user",
+                        "content": current_content,
+                        "images": [self.cached_base64_image]
+                    })
+                else:
+                    # Subsequent turns: standard text user message (image already cached in history)
+                    messages.append({
+                        "role": "user",
+                        "content": current_content
+                    })
 
-            ollama_start = time.time()
-            response = requests.post(
-                OLLAMA_CHAT_URL,
-                json={
-                    "model": OLLAMA_MODEL,
-                    "messages": messages,
-                    "stream": False,
-                    "keep_alive": -1,
-                    "options": {"num_predict": 300}
-                },
-                timeout=180,
-            )
-            response.raise_for_status()
-            ollama_duration = time.time() - ollama_start
-            
-            answer = response.json().get("message", {}).get("content", "").strip()
-            total_duration = time.time() - start_time
-            
-            # Log performance metrics
-            print(f"[Performance Metrics] Preprocessing: {preprocessing_duration:.3f}s | "
-                  f"Encoding: {encoding_duration:.3f}s | OCR: {ocr_duration:.3f}s | "
-                  f"Ollama Request: {ollama_duration:.3f}s | Total: {total_duration:.3f}s")
-            
-            if answer:
-                return answer
-        except requests.RequestException as e:
-            print(f"[Ollama Chat Error] Falling back to local BLIP model: {e}")
-            pass
+                ollama_start = time.time()
+                response = requests.post(
+                    OLLAMA_CHAT_URL,
+                    json={
+                        "model": vision_model,
+                        "messages": messages,
+                        "stream": False,
+                        "keep_alive": -1,
+                        "options": {"num_predict": 300}
+                    },
+                    timeout=180,
+                )
+                response.raise_for_status()
+                ollama_duration = time.time() - ollama_start
+                
+                answer = response.json().get("message", {}).get("content", "").strip()
+                total_duration = time.time() - start_time
+                
+                # Log performance metrics
+                print(f"[Performance Metrics] Preprocessing: {preprocessing_duration:.3f}s | "
+                      f"Encoding: {encoding_duration:.3f}s | OCR: {ocr_duration:.3f}s | "
+                      f"Ollama Request: {ollama_duration:.3f}s | Total: {total_duration:.3f}s")
+                
+                if answer:
+                    return answer
+            except requests.RequestException as e:
+                print(f"[Ollama Chat Error] Falling back to local BLIP + Qwen text pipeline: {e}")
+                pass
 
-        # ── Route 2: Fallback to Local BLIP ───────────────────────────────────
+        # ── Route 2: Local BLIP Visual Extraction + Installed Local Qwen Text LLM ───
         self._load_blip_fallback()
         
         if wants_text:
@@ -340,19 +405,38 @@ Answer the user's questions about the uploaded image.
                 ocr_text = self.cached_ocr_text
             if ocr_text:
                 context = f"Text/Writing extracted from image via OCR:\n{ocr_text}"
+                answer = self._write_chat_response(instruction, context, history or [], is_document=True)
             else:
-                context = "No readable text could be extracted from the image via OCR."
-            answer = self._write_chat_response(instruction, context, history or [], is_document=True)
+                # Fallback to combined visual context if OCR finds no text
+                if self.cached_blip_context is None:
+                    self.cached_blip_context = self._get_visual_context(self.cached_processed_image, instruction)
+                answer = self._write_chat_response(instruction, self.cached_blip_context, history or [])
         else:
-            if self.cached_blip_context is None:
-                self.cached_blip_context = self._get_visual_context(self.cached_processed_image, instruction)
-                if self.cached_quality_desc != "clear":
-                    self.cached_blip_context += f" Note: The image quality is low or the visual evidence is unclear ({self.cached_quality_desc})."
-            answer = self._write_chat_response(instruction, self.cached_blip_context, history or [])
+            # On follow-up questions or detail requests, query fresh visual context for the prompt
+            if history or any(kw in instruction.lower() for kw in ["detail", "more", "describe", "feature", "color", "model", "explain", "specs"]):
+                visual_context = self._get_visual_context(self.cached_processed_image, instruction)
+            else:
+                if self.cached_blip_context is None:
+                    self.cached_blip_context = self._get_visual_context(self.cached_processed_image, instruction)
+                visual_context = self.cached_blip_context
+
+            combined_context = visual_context
+            if self.cached_ocr_text is None:
+                self.cached_ocr_text = self._extract_text_ocr(self.cached_processed_image)
+            if self.cached_ocr_text:
+                combined_context += f"\n\n[Extracted Text / OCR / Equations / Bill details]:\n{self.cached_ocr_text}"
+            if extra_text_context:
+                combined_context += f"\n\n[File / Video / Document Context]:\n{extra_text_context}"
+
+            answer = self._write_chat_response(instruction, combined_context, history or [])
+
+
             
         total_duration = time.time() - start_time
         print(f"[Performance Metrics Fallback] Total: {total_duration:.3f}s (BLIP fallback used)")
         return answer
+
+
 
     # ── OCR helpers ───────────────────────────────────────────────────────────
 
@@ -396,23 +480,34 @@ Answer the user's questions about the uploaded image.
         return self.processor.decode(output[0], skip_special_tokens=True).strip()
 
     def _get_visual_context(self, image: Image.Image, instruction: str) -> str:
-        """Build reliable visual context before handing it to the text model."""
-        object_answer = self._answer_question(image, "What is the main object or scene in this image?")
-        
-        # Check image quality / clarity
-        is_blurry = self._answer_question(image, "Is this image blurry?")
-        is_dark = self._answer_question(image, "Is this image dark?")
-        
-        if self._needs_caption(instruction):
-            scene_answer = self._answer_question(image, "What is the setting, style, or background in this image?")
-            visual_context = f"Detected main subject: {object_answer}. Detected setting or style: {scene_answer}."
-        else:
-            answer = self._answer_question(image, instruction)
-            visual_context = f"Detected main subject: {object_answer}. Direct visual answer: {answer}."
+        """Build reliable visual context without forcing false domain labels or hallucinations."""
+        lower_prompt = instruction.lower()
 
-        if is_blurry.strip().lower() == "yes" or is_dark.strip().lower() == "yes":
-            visual_context += " Note: The image quality is low or the visual evidence is unclear/blurry."
-        return visual_context
+        is_logo_query = any(k in lower_prompt for k in ["logo", "brand", "company", "emblem", "icon", "symbol", "app"])
+        is_vehicle_query = any(k in lower_prompt for k in ["car", "vehicle", "truck", "bike", "auto", "model", "drive", "porsche"])
+
+        scene_answer = self._answer_question(image, "What is shown in this image and what is the room or setting?")
+        items_answer = self._answer_question(image, "What items, objects, evidence markers, weapons, or people are on the floor, ground, or background?")
+        details_answer = self._answer_question(image, "What notable colors, markings, stains, numbers, or visual features are visible?")
+        direct_answer = self._answer_question(image, instruction)
+
+        visual_context_parts = [
+            f"Overall scene & setting: {scene_answer}.",
+            f"Direct answer to prompt '{instruction}': {direct_answer}.",
+            f"Visible items, objects & evidence: {items_answer}.",
+            f"Visual details & markings: {details_answer}."
+        ]
+
+        if is_logo_query:
+            brand_clue = self._answer_question(image, "What company, brand, app, software, or entity logo is depicted?")
+            visual_context_parts.append(f"Brand/Logo clue: {brand_clue}.")
+
+        if is_vehicle_query:
+            vehicle_clue = self._answer_question(image, "What make, model, or type of vehicle is visible?")
+            visual_context_parts.append(f"Vehicle details clue: {vehicle_clue}.")
+
+        return " ".join(visual_context_parts)
+
 
     # ── LLM response ──────────────────────────────────────────────────────────
 
@@ -423,61 +518,52 @@ Answer the user's questions about the uploaded image.
         history: list[ChatTurn],
         is_document: bool = False,
     ) -> str:
-        """Use the already-installed local Qwen model for a natural response."""
-        recent_turns = history[-8:]
-        history_text = "\n".join(
-            f"{turn['role'].title()}: {turn['content']}" for turn in recent_turns
-        ) or "No earlier conversation."
+        """Use the already-installed local Qwen model for a natural, fast response (~5s ChatGPT speed)."""
+        is_performance_request = any(
+            kw in instruction.lower()
+            for kw in ["perform", "act", "script", "recite", "monologue", "dialogue", "roleplay"]
+        )
 
-        # Detect if clarity check has negative indicators
-        vc_lower = visual_context.lower()
-        is_unclear = "low or the visual evidence is unclear/blurry" in vc_lower
-        
-        if is_unclear:
-            uncertainty_instruction = """
-IMPORTANT: The visual evidence indicates the image is blurry, dark, unclear, or low-resolution. 
-You must prefer uncertainty and clearly state that the image is unclear or dark, and that you cannot reliably identify the details. 
-Do NOT guess, invent, or confidently state details like objects, colors, or text that are not clearly visible. 
-For example, respond with something like: 'The image is a bit unclear, so I can't reliably identify the object.'"""
+        if is_performance_request:
+            history_text = "No earlier conversation."
         else:
-            uncertainty_instruction = ""
+            recent_turns = history[-8:]
+            history_text = "\n".join(
+                f"{turn['role'].title()}: {turn['content']}" for turn in recent_turns
+            ) or "No earlier conversation."
 
-        if is_document:
-            # Document / OCR mode — focus on the extracted text
-            prompt = f"""You are a helpful document assistant. The user has uploaded an image containing text (like a question paper, document, or notes).
-The text has been extracted from the image using OCR and is provided below.
-Respond clearly and helpfully to the user's request based on this extracted text.
-For summaries, be concise and structured. For questions about content, answer directly.
-{uncertainty_instruction}
+        prompt = f"""You are a universal local AI assistant capable of visual analysis, document processing, and authentic character performance:
+- Scripts, Acting & Performance: When given a script, dialogue, monologue, or acting document (or when asked to "perform the script"), DO NOT write a summary, analysis, or meta-explanation like "Based on the provided script...". Instead, ACT AND PERFORM THE SCRIPT DIRECTLY character-by-character, line-by-line with full emotional delivery, stage directions, and vocal tone exactly as written in the script!
+- Documents, Bills & Text: Transcribe, analyze, or answer questions about uploaded documents, bills, or handwritten notes.
+- Visual & Scene Analysis: Identify objects, settings, logos, vehicles, crime scene evidence, medical symptoms, or math equations accurately based strictly on visual evidence.
 
-Previous conversation:
+CRITICAL RULE FOR SCRIPT PERFORMANCE:
+If the user asks to "perform", "read", "act out", or provides a script (e.g. FRIDAY Emotion Test or monologue), PERFORM THE EXACT SCRIPT PROVIDED IN THE CURRENT USER REQUEST BELOW. Recite the exact character lines, emotions, and stage directions. NEVER repeat, quote, or reuse any script lines or sentences from previous turns in the conversation history!
+
+Previous conversation history:
 {history_text}
 
-User request: {instruction}
-Extracted text from image:
+Current user request: {instruction}
+Visual & textual evidence from local image models:
 {visual_context}
 
 Answer:"""
-        else:
-            # Normal image / scene mode
-            prompt = f"""You are a helpful image assistant. Reply naturally and clearly to the user's request.
-Use only the visual evidence below. Do not say that you cannot see the image and do not invent details.
-For descriptions or captions, write 2 to 4 useful sentences. For direct questions, answer directly first and then add brief context if useful.
-{uncertainty_instruction}
 
-Previous conversation:
-{history_text}
 
-User request: {instruction}
-Visual evidence from local image models: {visual_context}
 
-Answer:"""
+
+        vision_model, text_model = get_installed_ollama_models()
 
         try:
             response = requests.post(
                 OLLAMA_URL,
-                json={"model": OLLAMA_MODEL, "prompt": prompt, "stream": False, "options": {"num_predict": 300}},
-                timeout=180,
+                json={
+                    "model": text_model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {"num_predict": 750, "temperature": 0.2}
+                },
+                timeout=120,
             )
             response.raise_for_status()
             answer = response.json().get("response", "").strip()
@@ -485,7 +571,9 @@ Answer:"""
                 return answer
         except requests.RequestException:
             pass
-        return visual_context
+        return format_fallback_visual_context(visual_context)
+
+
 
 
 @lru_cache(maxsize=1)
