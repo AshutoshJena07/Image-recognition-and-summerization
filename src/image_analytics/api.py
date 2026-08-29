@@ -6,12 +6,17 @@ Run locally with: python -m uvicorn src.image_analytics.api:app --reload --reloa
 from __future__ import annotations
 
 import json
+import sqlite3
+import hashlib
+import secrets
+from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Header, Body
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from PIL import Image, UnidentifiedImageError
 
 from src.image_analytics.vision_assistant import DEFAULT_PROMPT, get_vision_assistant
@@ -295,5 +300,293 @@ async def synthesize_speech(
             "backend": "web_speech_api",
             "message": f"Server-side TTS notice: {exc}."
         }
+
+
+# =====================================================================
+# DATABASE SETTING & PERSISTENCE
+# =====================================================================
+
+DB_PATH = Path(__file__).resolve().parents[2] / "data" / "assistant.db"
+
+def get_db_connection():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON;")
+    
+    # 1. Users table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+    
+    # 2. Sessions table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS sessions (
+        token TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+    """)
+    
+    # 3. Conversations table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS conversations (
+        id TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        messages_json TEXT NOT NULL,
+        attachments_json TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+    """)
+    
+    conn.commit()
+    conn.close()
+
+@app.on_event("startup")
+def startup_event():
+    # Automatically initialize SQLite schemas on startup
+    init_db()
+
+# =====================================================================
+# PASSWORD SECURITY & SESSIONS HELPERS
+# =====================================================================
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    pw_hash = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 100000).hex()
+    return f"{salt}${pw_hash}"
+
+def verify_password(password: str, hashed: str) -> bool:
+    try:
+        salt, pw_hash = hashed.split("$")
+        test_hash = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 100000).hex()
+        return test_hash == pw_hash
+    except Exception:
+        return False
+
+def get_current_user(authorization: str = Header(None)) -> int:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid authentication token.")
+    token = authorization.split(" ")[1]
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT user_id, expires_at FROM sessions WHERE token = ?", (token,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row:
+        raise HTTPException(status_code=401, detail="Session expired or invalid token.")
+        
+    expires_at = datetime.fromisoformat(row["expires_at"])
+    if expires_at < datetime.utcnow():
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM sessions WHERE token = ?", (token,))
+        conn.commit()
+        conn.close()
+        raise HTTPException(status_code=401, detail="Session token expired.")
+        
+    return row["user_id"]
+
+# =====================================================================
+# AUTHENTICATION PAYLOAD STRUCTURES
+# =====================================================================
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class ConversationSaveRequest(BaseModel):
+    id: str
+    title: str
+    messages: list
+    attachments: list
+
+# =====================================================================
+# AUTH ROUTES
+# =====================================================================
+
+@app.post("/api/auth/register")
+async def register(req: RegisterRequest):
+    email = req.email.strip().lower()
+    password = req.password
+    if not email or len(password) < 6:
+        raise HTTPException(status_code=400, detail="Invalid email or password must be at least 6 characters.")
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        pw_hash = hash_password(password)
+        cursor.execute("INSERT INTO users (email, password_hash) VALUES (?, ?)", (email, pw_hash))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Email is already registered.")
+    
+    conn.close()
+    return {"status": "success", "message": "User registered successfully."}
+
+@app.post("/api/auth/login")
+async def login(req: LoginRequest):
+    email = req.email.strip().lower()
+    password = req.password
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, password_hash FROM users WHERE email = ?", (email,))
+    user = cursor.fetchone()
+    conn.close()
+    
+    if not user or not verify_password(password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Incorrect email or password.")
+        
+    token = secrets.token_hex(32)
+    expires_at = (datetime.utcnow() + timedelta(days=7)).isoformat()
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (token, user["id"], expires_at))
+    conn.commit()
+    conn.close()
+    
+    return {"token": token, "email": email}
+
+@app.post("/api/auth/logout")
+async def logout(authorization: str = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+         raise HTTPException(status_code=400, detail="Authorization token required.")
+    token = authorization.split(" ")[1]
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM sessions WHERE token = ?", (token,))
+    conn.commit()
+    conn.close()
+    
+    return {"status": "success", "message": "Session invalidated."}
+
+@app.get("/api/auth/me")
+async def get_me(authorization: str = Header(None)):
+    user_id = get_current_user(authorization)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT email FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return {"id": user_id, "email": user["email"]}
+
+# =====================================================================
+# CONVERSATION HISTORY ROUTES
+# =====================================================================
+
+@app.get("/api/conversations")
+async def list_conversations(authorization: str = Header(None)):
+    user_id = get_current_user(authorization)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, title, created_at, updated_at, attachments_json FROM conversations WHERE user_id = ? ORDER BY updated_at DESC", 
+        (user_id,)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    
+    conversations = []
+    for r in rows:
+        conversations.append({
+            "id": r["id"],
+            "title": r["title"],
+            "created_at": r["created_at"],
+            "updated_at": r["updated_at"],
+            "attachments": json.loads(r["attachments_json"])
+        })
+    return conversations
+
+@app.get("/api/conversations/{conversation_id}")
+async def get_conversation(conversation_id: str, authorization: str = Header(None)):
+    user_id = get_current_user(authorization)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, title, messages_json, attachments_json FROM conversations WHERE id = ? AND user_id = ?", 
+        (conversation_id, user_id)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+        
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "messages": json.loads(row["messages_json"]),
+        "attachments": json.loads(row["attachments_json"])
+    }
+
+@app.post("/api/conversations")
+async def save_conversation(req: ConversationSaveRequest, authorization: str = Header(None)):
+    user_id = get_current_user(authorization)
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id FROM conversations WHERE id = ? AND user_id = ?", (req.id, user_id))
+        exists = cursor.fetchone()
+        
+        now = datetime.utcnow().isoformat()
+        messages_str = json.dumps(req.messages)
+        attachments_str = json.dumps(req.attachments)
+        
+        if exists:
+            cursor.execute(
+                "UPDATE conversations SET title = ?, messages_json = ?, attachments_json = ?, updated_at = ? WHERE id = ? AND user_id = ?",
+                (req.title, messages_str, attachments_str, now, req.id, user_id)
+            )
+        else:
+            cursor.execute(
+                "INSERT INTO conversations (id, user_id, title, messages_json, attachments_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (req.id, user_id, req.title, messages_str, attachments_str, now, now)
+            )
+        conn.commit()
+    except sqlite3.Error as exc:
+        conn.close()
+        raise HTTPException(status_code=500, detail=f"Database error: {exc}")
+    
+    conn.close()
+    return {"status": "success", "message": "Conversation saved."}
+
+@app.delete("/api/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str, authorization: str = Header(None)):
+    user_id = get_current_user(authorization)
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM conversations WHERE id = ? AND user_id = ?", (conversation_id, user_id))
+    conn.commit()
+    conn.close()
+    
+    return {"status": "success", "message": "Conversation deleted."}
+
 
 
