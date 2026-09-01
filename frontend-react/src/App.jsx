@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import HomePage from './pages/HomePage';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
@@ -37,10 +38,10 @@ function AppRouter() {
 
   if (loading) {
     return (
-      <div style={{ display: 'grid', placeItems: 'center', height: '100vh', background: '#050507', color: '#fff' }}>
+      <div style={{ display: 'grid', placeItems: 'center', height: '100vh', background: 'var(--bg-app)', color: 'var(--text-primary)' }}>
         <div style={{ textAlign: 'center' }}>
           <div className="welcome-orb" style={{ margin: '0 auto 16px auto', width: '50px', height: '50px', fontSize: '18px' }}>✦</div>
-          <p style={{ fontSize: '12px', color: 'var(--muted)', letterSpacing: '0.1em' }}>SYNCHRONIZING PRIVATE ENVIRONMENT...</p>
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)', letterSpacing: '0.1em' }}>SYNCHRONIZING PRIVATE ENVIRONMENT...</p>
         </div>
       </div>
     );
@@ -106,9 +107,11 @@ function App() {
   };
 
   return (
-    <AuthProvider navigate={navigate}>
-      <AppRouter />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider navigate={navigate}>
+        <AppRouter />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

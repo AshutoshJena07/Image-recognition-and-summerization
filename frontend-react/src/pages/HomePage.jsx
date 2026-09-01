@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 export default function HomePage({ navigate }) {
@@ -27,11 +27,11 @@ export default function HomePage({ navigate }) {
 
   return (
     <div className="landing-shell">
-      {/* Premium Static Navigation Header */}
+      {/* Navigation Header */}
       <header className="landing-nav">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="brand-mark" style={{ height: '28px', width: '28px', fontSize: '14px' }}>✦</span>
-          <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '18px', color: '#fff' }}>
+          <span className="brand-mark">✦</span>
+          <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '18px', color: 'var(--text-primary)' }}>
             Multimodal AI
           </span>
         </div>
@@ -58,12 +58,12 @@ export default function HomePage({ navigate }) {
       {/* Main Hero Container */}
       <section className="landing-hero">
         <div className="landing-hero-content">
-          <div className="welcome-eyebrow" style={{ color: 'var(--accent)', letterSpacing: '0.3em', fontWeight: 800 }}>
+          <div className="welcome-eyebrow">
             ✦ PRIVACY-FIRST COGNITIVE COMPASS
           </div>
           <h1 className="landing-title">
             Intelligent Image Recognition <br />
-            <span style={{ background: 'linear-gradient(135deg, #a78bfa, var(--accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <span style={{ background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               & Summarization Workspace
             </span>
           </h1>
@@ -90,7 +90,7 @@ export default function HomePage({ navigate }) {
         </div>
 
         {/* Floating Cognitive Orb Graphic */}
-        <div className="welcome-orb" style={{ width: '120px', height: '120px', fontSize: '32px', margin: '40px auto 20px auto' }}>
+        <div className="welcome-orb" style={{ width: '100px', height: '100px', fontSize: '28px', margin: '40px auto 20px auto' }}>
           ✦
         </div>
       </section>
@@ -108,7 +108,7 @@ export default function HomePage({ navigate }) {
                 <span className="dot yellow"></span>
                 <span className="dot green"></span>
               </div>
-              <span style={{ fontSize: '10px', color: 'var(--muted)', fontFamily: 'monospace' }}>sandbox-simulation.local</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>sandbox-simulation.local</span>
             </div>
             
             <div className="sandbox-body">
@@ -122,12 +122,12 @@ export default function HomePage({ navigate }) {
                 {sandboxAnswer ? (
                   <div className="sandbox-response">
                     <strong>Assistant Response:</strong>
-                    <div style={{ marginTop: '8px', lineHeight: 1.5 }}>{sandboxAnswer}</div>
+                    <div style={{ marginTop: '8px', lineHeight: 1.55 }}>{sandboxAnswer}</div>
                   </div>
                 ) : isTyping ? (
                   <div className="sandbox-loading-pulse">Analyzing attached document...</div>
                 ) : (
-                  <div style={{ color: 'var(--muted)', fontStyle: 'italic', fontSize: '13px' }}>
+                  <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '13px' }}>
                     Select a preview option below to start simulation...
                   </div>
                 )}
@@ -171,7 +171,7 @@ export default function HomePage({ navigate }) {
       </section>
 
       {/* Specifications & Blueprint */}
-      <section id="specs" className="landing-section" style={{ borderTop: '1px solid var(--border)', background: 'rgba(255,255,255,0.01)' }}>
+      <section id="specs" className="landing-section" style={{ borderTop: '1px solid var(--border-subtle)' }}>
         <div className="landing-inner">
           <h2 className="section-title">Technical Specifications</h2>
           <p className="section-subtitle">Fully local data residency paired with standard acceleration backends.</p>

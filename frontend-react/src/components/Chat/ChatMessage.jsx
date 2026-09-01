@@ -32,18 +32,19 @@ export default function ChatMessage({ message, onSpeak, isSpeakingThis }) {
               <span 
                 className="message-meta" 
                 style={{ 
-                  fontSize: '9px', 
-                  background: 'var(--surface-hover)', 
-                  padding: '1px 6px', 
-                  borderRadius: '6px', 
-                  border: '1px solid var(--border)', 
-                  marginLeft: '8px' 
+                  fontSize: '9.5px', 
+                  background: 'var(--bg-surface)', 
+                  padding: '2px 8px', 
+                  borderRadius: 'var(--radius-xs)', 
+                  border: '1px solid var(--border-subtle)', 
+                  marginLeft: '8px',
+                  fontWeight: 600
                 }}
               >
                 Local VLM Engine
               </span>
             )}
-            <span className="message-meta" style={{ marginLeft: '6px', opacity: 0.6 }}>• {displayTime}</span>
+            <span className="message-meta" style={{ marginLeft: '6px' }}>• {displayTime}</span>
           </div>
 
           {isBot && !typing && (
@@ -54,7 +55,7 @@ export default function ChatMessage({ message, onSpeak, isSpeakingThis }) {
                 type="button"
                 onClick={() => onSpeak && onSpeak(message.id, text)}
                 title={isSpeakingThis ? "Stop reading response" : "Read response aloud"}
-                style={{ color: isSpeakingThis ? 'var(--accent)' : 'inherit', fontWeight: isSpeakingThis ? 'bold' : 'normal' }}
+                style={{ color: isSpeakingThis ? 'var(--accent-primary)' : 'inherit', fontWeight: isSpeakingThis ? '700' : '600' }}
               >
                 {isSpeakingThis ? '⏹ Stop' : '🔊 Read'}
               </button>

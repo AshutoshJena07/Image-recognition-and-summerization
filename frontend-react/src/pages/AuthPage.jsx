@@ -53,12 +53,12 @@ export default function AuthPage({ isSignUpDefault = false, navigate }) {
 
   return (
     <div className="auth-shell">
-      {/* Dynamic Back-to-Home Float Link */}
+      {/* Back to Home Button */}
       <div style={{ position: 'absolute', top: '24px', left: '24px' }}>
         <button 
           onClick={() => navigate('#/')} 
           className="toggle-button"
-          style={{ background: 'rgba(255,255,255,0.02)', padding: '8px 16px', borderRadius: '12px' }}
+          style={{ padding: '8px 16px', borderRadius: 'var(--radius-md)' }}
         >
           ← Back to Landing
         </button>
@@ -67,10 +67,10 @@ export default function AuthPage({ isSignUpDefault = false, navigate }) {
       <div className="auth-card">
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <span className="brand-mark" style={{ margin: '0 auto 12px auto', height: '36px', width: '36px', fontSize: '18px' }}>✦</span>
-          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '24px', fontWeight: 800 }}>
+          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)' }}>
             {isSignUp ? 'Create Workspace' : 'Unlock Workspace'}
           </h2>
-          <p style={{ color: 'var(--muted)', fontSize: '12.5px', marginTop: '4px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>
             {isSignUp ? 'Register to sync your private sessions database.' : 'Sign in to access your dashboard runs.'}
           </p>
         </div>
@@ -139,9 +139,9 @@ export default function AuthPage({ isSignUpDefault = false, navigate }) {
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '12px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '12.5px', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
           {isSignUp ? (
-            <span style={{ color: 'var(--muted)' }}>
+            <span style={{ color: 'var(--text-muted)' }}>
               Already registered?{' '}
               <button 
                 onClick={() => { setIsSignUp(false); setErrorMsg(''); }} 
@@ -152,7 +152,7 @@ export default function AuthPage({ isSignUpDefault = false, navigate }) {
               </button>
             </span>
           ) : (
-            <span style={{ color: 'var(--muted)' }}>
+            <span style={{ color: 'var(--text-muted)' }}>
               Need a sync profile?{' '}
               <button 
                 onClick={() => { setIsSignUp(true); setErrorMsg(''); }} 

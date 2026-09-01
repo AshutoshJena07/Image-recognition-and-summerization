@@ -1,8 +1,22 @@
 import React, { useState } from 'react';
+import {
+  SparklesIcon,
+  PlusIcon,
+  PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
+  MessageSquareIcon,
+  LayoutDashboardIcon,
+  SearchIcon,
+  FileTextIcon,
+  LogOutIcon,
+  XIcon
+} from '../Common/Icons';
 
-export default function Sidebar({ 
-  isOpen, 
-  setIsOpen, 
+export default function Sidebar({
+  isOpen,
+  setIsOpen,
+  isCollapsed,
+  setIsCollapsed,
   onNewSession,
   conversationsList = [],
   activeSessionId,
@@ -14,121 +28,217 @@ export default function Sidebar({
   const [searchQuery, setSearchQuery] = useState('');
 
   // Interactively filter history list by search query
-  const filteredHistory = conversationsList.filter(item => 
+  const filteredHistory = conversationsList.filter(item =>
     item.title?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  return (
-    <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
-      {/* Sidebar Branding */}
-      <div className="sidebar-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', height: '80px', borderBottom: '1px solid var(--border)', gap: '4px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => navigate('#/dashboard')}>
-          <span className="brand-mark">✦</span>
-          <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '15px', color: 'var(--text)' }}>
-            Multimodal AI
-          </span>
-        </div>
-        <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', fontWeight: 600 }}>
-          {guestMode ? 'Sandbox Workspace' : 'Synced Workspace'}
-        </span>
-      </div>
+  const handleToggleCollapse = () => {
+    setIsCollapsed(prev => !prev);
+  };
 
-      {/* New Analysis Button */}
-      <div style={{ padding: '16px 16px 8px 16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <button 
-          className="new-chat-btn"
-          onClick={() => {
-            if (onNewSession) onNewSession();
-            setIsOpen(false);
+  const handleNewSessionClick = () => {
+    if (onNewSession) onNewSession();
+    if (isOpen) setIsOpen(false);
+  };
+
+  const handleNavClick = (hash) => {
+    navigate(hash);
+    if (isOpen) setIsOpen(false);
+  };
+
+  return (
+    <aside
+      className={`sidebar ${isOpen ? 'open' : ''} ${isCollapsed ? 'collapsed' : ''}`}
+      aria-label="Main Navigation Sidebar"
+    >
+      {/* 1. Header / Brand & Collapse Toggle */}
+      <div className="sidebar-header">
+        <div
+          className="sidebar-brand"
+          onClick={() => handleNavClick('#/dashboard')}
+          title="Multimodal AI Workspace Home"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleNavClick('#/dashboard');
+            }
           }}
         >
-          <span>＋</span> New Session
-        </button>
-        {!guestMode && (
-          <button 
-            className="toggle-button"
-            style={{ width: '100%', justifyContent: 'center', borderRadius: '10px', padding: '8px' }}
-            onClick={() => navigate('#/dashboard')}
+          <span className="brand-mark" aria-hidden="true">✦</span>
+          {!isCollapsed && (
+            <div className="brand-info">
+              <span className="brand-name">Multimodal AI</span>
+              <span className="brand-badge">
+                {guestMode ? 'Sandbox' : 'Synced'}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Collapse Toggle / Mobile Close */}
+        <div className="sidebar-header-actions">
+          {/* Mobile close button */}
+          <button
+            className="icon-btn mobile-close-btn"
+            onClick={() => setIsOpen(false)}
+            aria-label="Close navigation drawer"
+            title="Close navigation drawer"
           >
-            📊 Dashboard
+            <XIcon size={18} />
           </button>
-        )}
+
+          {/* Desktop sidebar collapse/expand toggle */}
+          <button
+            className="icon-btn desktop-collapse-btn"
+            onClick={handleToggleCollapse}
+            aria-label={isCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
+            title={isCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
+          >
+            {isCollapsed ? <PanelLeftOpenIcon size={18} /> : <PanelLeftCloseIcon size={18} />}
+          </button>
+        </div>
       </div>
 
-      {/* Search Filter input (Hidden in Guest Sandbox to avoid empty space) */}
-      {!guestMode && (
+      {/* 2. Primary Actions (+ New Session) */}
+      <div className="sidebar-actions-section">
+        <button
+          className="new-chat-btn"
+          onClick={handleNewSessionClick}
+          title="Start a new analysis session"
+          aria-label="New Session"
+        >
+          <PlusIcon size={18} />
+          {!isCollapsed && <span className="btn-label">New Session</span>}
+        </button>
+      </div>
+
+      {/* 3. Navigation Links */}
+      <nav className="sidebar-nav" aria-label="Workspace Views">
+        <button
+          className={`sidebar-nav-item ${window.location.hash.startsWith('#/workspace') ? 'active' : ''}`}
+          onClick={() => handleNavClick('#/workspace')}
+          title="AI Workspace"
+          aria-label="AI Workspace"
+          aria-current={window.location.hash.startsWith('#/workspace') ? 'page' : undefined}
+        >
+          <span className="nav-icon"><MessageSquareIcon size={18} /></span>
+          {!isCollapsed && <span className="nav-label">AI Workspace</span>}
+        </button>
+
+        {!guestMode && (
+          <button
+            className={`sidebar-nav-item ${window.location.hash === '#/dashboard' ? 'active' : ''}`}
+            onClick={() => handleNavClick('#/dashboard')}
+            title="Dashboard Center"
+            aria-label="Dashboard Center"
+            aria-current={window.location.hash === '#/dashboard' ? 'page' : undefined}
+          >
+            <span className="nav-icon"><LayoutDashboardIcon size={18} /></span>
+            {!isCollapsed && <span className="nav-label">Dashboard</span>}
+          </button>
+        )}
+      </nav>
+
+      {/* 4. Search Filter (Expanded only) */}
+      {!guestMode && !isCollapsed && (
         <div className="sidebar-search-container">
-          <div style={{ position: 'relative' }}>
-            <input 
-              type="text" 
+          <div className="sidebar-search-wrapper">
+            <span className="search-icon-adornment" aria-hidden="true">
+              <SearchIcon size={14} />
+            </span>
+            <input
+              type="text"
               className="sidebar-search-box"
-              placeholder="Search past analyses..."
+              placeholder="Search past runs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ paddingLeft: '28px' }}
               aria-label="Search conversation history"
             />
-            <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', color: 'var(--muted)', pointerEvents: 'none' }}>
-              🔍
-            </span>
           </div>
         </div>
       )}
 
-      {/* Sidebar Scrolling History List */}
+      {/* 5. Scrollable Runs History */}
       <div className="sidebar-scroll">
-        <div className="sidebar-title">{guestMode ? 'Sandbox runs' : 'Recent Runs'}</div>
-        
-        {guestMode ? (
-          <div style={{ padding: '8px 12px', fontSize: '11px', color: 'var(--muted)', fontStyle: 'italic', lineHeight: 1.4 }}>
-            Running in non-persistent sandbox. Create an account to sync history databases.
+        {!isCollapsed && (
+          <div className="sidebar-title">
+            {guestMode ? 'Sandbox runs' : 'Recent Runs'}
+          </div>
+        )}
+
+        {isCollapsed ? (
+          // Collapsed indicator for history
+          <div className="collapsed-history-indicator" title={`${conversationsList.length} past runs available`}>
+            <div className="collapsed-dot-stack">
+              <FileTextIcon size={16} />
+              {conversationsList.length > 0 && (
+                <span className="collapsed-count-badge">{conversationsList.length}</span>
+              )}
+            </div>
+          </div>
+        ) : guestMode ? (
+          <div className="sidebar-empty-state">
+            Running in sandbox. Sign in to persist your multimodal analysis history.
           </div>
         ) : filteredHistory.length > 0 ? (
           filteredHistory.map(item => (
-            <div 
-              key={item.id} 
+            <div
+              key={item.id}
               className={`history-item ${item.id === activeSessionId ? 'active' : ''}`}
-              onClick={() => {
-                navigate(`#/workspace/${item.id}`);
-                setIsOpen(false);
+              onClick={() => handleNavClick(`#/workspace/${item.id}`)}
+              title={item.title}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleNavClick(`#/workspace/${item.id}`);
+                }
               }}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                <span style={{ fontSize: '13px' }}>📄</span>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {item.title}
-                </span>
-              </div>
+              <span className="history-icon" aria-hidden="true">
+                <FileTextIcon size={14} />
+              </span>
+              <span className="history-text">{item.title}</span>
             </div>
           ))
         ) : (
-          <div style={{ padding: '8px 12px', fontSize: '12px', color: 'var(--muted)', fontStyle: 'italic' }}>
-            No synced runs found
+          <div className="sidebar-empty-state">
+            {searchQuery ? 'No matching runs found' : 'No past runs yet'}
           </div>
         )}
       </div>
 
-      {/* Sidebar Profile Card at Bottom */}
+      {/* 6. User Profile Card & Sign Out */}
       <div className="sidebar-footer">
-        <div className="profile-avatar">
-          {guestMode ? 'G' : (user?.email?.charAt(0).toUpperCase() || 'U')}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {guestMode ? 'Guest Session' : (user?.email?.split('@')[0] || 'Logged In')}
-          </span>
-          <span style={{ fontSize: '9px', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {guestMode ? 'guest@workspace.local' : (user?.email || 'authenticated')}
-          </span>
-        </div>
-        <button 
-          className="icon-btn" 
-          onClick={logout}
-          style={{ padding: '4px', fontSize: '14px' }}
-          title={guestMode ? 'Exit Sandbox' : 'Sign Out Account'}
+        <div
+          className="profile-info-wrap"
+          title={guestMode ? 'Guest Session' : (user?.email || 'Logged In User')}
         >
-          🚪
+          <div className="profile-avatar" aria-hidden="true">
+            {guestMode ? 'G' : (user?.email?.charAt(0).toUpperCase() || 'U')}
+          </div>
+          {!isCollapsed && (
+            <div className="profile-details">
+              <span className="profile-name">
+                {guestMode ? 'Guest Session' : (user?.email?.split('@')[0] || 'User')}
+              </span>
+              <span className="profile-email">
+                {guestMode ? 'guest@workspace.local' : (user?.email || 'authenticated')}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <button
+          className="icon-btn logout-btn"
+          onClick={logout}
+          aria-label={guestMode ? "Exit Sandbox" : "Sign Out Account"}
+          title={guestMode ? "Exit Sandbox" : "Sign Out Account"}
+        >
+          <LogOutIcon size={16} />
         </button>
       </div>
     </aside>

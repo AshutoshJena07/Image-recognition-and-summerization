@@ -6,6 +6,7 @@ import { checkHealth, analyzeFile, fetchConversationDetail, saveConversation, fe
 import { validateFileExtension } from '../utils/fileValidation';
 import useSpeechSynthesis from '../hooks/useSpeechSynthesis';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 export default function WorkspacePage({ 
   navigate, 
@@ -16,9 +17,9 @@ export default function WorkspacePage({
   clearPreloadedPrompt
 }) {
   const { token, user, guestMode, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
 
-  // Theme and UI States
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  // UI States
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(() => localStorage.getItem('auto_speak') === 'true');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -171,12 +172,6 @@ export default function WorkspacePage({
       setSpeakingMessageId(null);
     }
   }, [isSpeaking]);
-
-  // Sync theme attribute on document root
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
 
   // Sync auto-speak preference
   useEffect(() => {
@@ -446,11 +441,11 @@ export default function WorkspacePage({
 
       {/* Floating Settings Studio Drawer */}
       <div className={`settings-drawer ${isSettingsOpen ? 'open' : ''}`}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
-          <h3 style={{ fontSize: '13px', fontWeight: 'bold' }}>Voice Studio Settings</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
+          <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Voice Studio Settings</h3>
           <button 
             onClick={() => setIsSettingsOpen(false)}
-            style={{ background: 'transparent', border: 0, cursor: 'pointer', fontSize: '18px', color: 'var(--muted)' }}
+            style={{ background: 'transparent', border: 0, cursor: 'pointer', fontSize: '18px', color: 'var(--text-muted)' }}
           >
             ×
           </button>
@@ -472,7 +467,7 @@ export default function WorkspacePage({
               ))}
             </select>
           ) : (
-            <div style={{ fontSize: '11px', color: 'var(--muted)', fontStyle: 'italic' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
               Web Speech API not supported in this browser.
             </div>
           )}
@@ -525,7 +520,7 @@ export default function WorkspacePage({
               pitch: speechPitch
             });
           }}
-          style={{ width: '100%', justifyContent: 'center', marginTop: '12px', background: 'var(--surface-hover)', color: 'var(--text)' }}
+          style={{ width: '100%', justifyContent: 'center', marginTop: '12px', background: 'var(--bg-surface-hover)', color: 'var(--text-primary)' }}
           disabled={!ttsSupported}
         >
           ▶ Play Voice Preview
@@ -536,7 +531,7 @@ export default function WorkspacePage({
           <button 
             className="toggle-button"
             onClick={handlePlayActiveResponse}
-            style={{ flex: 1, justifyContent: 'center', fontSize: '10px', padding: '6px 0' }}
+            style={{ flex: 1, justifyContent: 'center', fontSize: '11px', padding: '6px 0' }}
             title="Play/Resume Audio"
             disabled={!ttsSupported}
           >
@@ -545,7 +540,7 @@ export default function WorkspacePage({
           <button 
             className="toggle-button"
             onClick={pause}
-            style={{ flex: 1, justifyContent: 'center', fontSize: '10px', padding: '6px 0' }}
+            style={{ flex: 1, justifyContent: 'center', fontSize: '11px', padding: '6px 0' }}
             title="Pause Audio"
             disabled={!ttsSupported || !isSpeaking || isPaused}
           >
@@ -554,7 +549,7 @@ export default function WorkspacePage({
           <button 
             className="toggle-button"
             onClick={stopSpeech}
-            style={{ flex: 1, justifyContent: 'center', fontSize: '10px', padding: '6px 0' }}
+            style={{ flex: 1, justifyContent: 'center', fontSize: '11px', padding: '6px 0' }}
             title="Stop Audio"
             disabled={!ttsSupported || !isSpeaking}
           >

@@ -46,9 +46,9 @@ export default function FileUploaderUI({ activeFile, onRemove }) {
               placeItems: 'center', 
               width: '28px', 
               height: '28px', 
-              background: 'var(--surface-hover)', 
-              borderRadius: '6px',
-              border: '1px solid var(--border)' 
+              background: 'var(--bg-surface-hover)', 
+              borderRadius: 'var(--radius-xs)', 
+              border: '1px solid var(--border-default)' 
             }}
           >
             {getFileIcon()}
@@ -59,7 +59,7 @@ export default function FileUploaderUI({ activeFile, onRemove }) {
           <span className="preview-filename" title={name}>
             {name}
           </span>
-          <span style={{ fontSize: '9px', color: 'var(--muted)' }}>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
             {fileExt} File • {getFileSizeLabel()}
           </span>
         </div>
