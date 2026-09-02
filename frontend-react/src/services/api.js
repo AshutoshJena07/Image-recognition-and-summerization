@@ -100,10 +100,13 @@ export async function getMe(token) {
   });
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.detail || 'Failed to fetch user profile');
+    const error = new Error(data.detail || 'Failed to fetch user profile');
+    error.status = response.status;
+    throw error;
   }
   return data; // returns { id, email }
 }
+
 
 // Conversations Persistence API Calls
 export async function fetchConversations(token) {

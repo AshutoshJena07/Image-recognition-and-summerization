@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import ThemeDropdown from '../components/Common/ThemeDropdown';
+import {
+  ArrowLeftIcon,
+  AlertTriangleIcon,
+  CheckCircleIcon
+} from '../components/Common/Icons';
 
 export default function AuthPage({ isSignUpDefault = false, navigate }) {
   const { login, register } = useAuth();
@@ -53,39 +59,47 @@ export default function AuthPage({ isSignUpDefault = false, navigate }) {
 
   return (
     <div className="auth-shell">
-      {/* Back to Home Button */}
-      <div style={{ position: 'absolute', top: '24px', left: '24px' }}>
+      {/* Top Bar Actions: Back to Landing & Theme Selector */}
+      <div style={{ position: 'absolute', top: '16px', left: '16px' }}>
         <button 
           onClick={() => navigate('#/')} 
           className="toggle-button"
-          style={{ padding: '8px 16px', borderRadius: 'var(--radius-md)' }}
+          style={{ padding: '5px 10px', borderRadius: 'var(--radius-sm)', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
         >
-          ← Back to Landing
+          <ArrowLeftIcon size={13} />
+          <span>Back to Home</span>
         </button>
       </div>
 
+      <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
+        <ThemeDropdown />
+      </div>
+
       <div className="auth-card">
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <span className="brand-mark" style={{ margin: '0 auto 12px auto', height: '36px', width: '36px', fontSize: '18px' }}>✦</span>
-          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)' }}>
+        <div style={{ textAlign: 'center', marginBottom: '18px' }}>
+          <span className="brand-mark-sm" style={{ margin: '0 auto 8px auto', height: '26px', width: '26px', fontSize: '13px' }}>✦</span>
+          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '19px', fontWeight: 800, color: 'var(--text-primary)' }}>
             {isSignUp ? 'Create Workspace' : 'Unlock Workspace'}
           </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '11.5px', marginTop: '3px' }}>
             {isSignUp ? 'Register to sync your private sessions database.' : 'Sign in to access your dashboard runs.'}
           </p>
         </div>
 
         {errorMsg && (
           <div className="auth-alert error">
-            ⚠️ {errorMsg}
+            <AlertTriangleIcon size={14} />
+            <span>{errorMsg}</span>
           </div>
         )}
 
         {successMsg && (
           <div className="auth-alert success">
-            ✓ {successMsg}
+            <CheckCircleIcon size={14} />
+            <span>{successMsg}</span>
           </div>
         )}
+
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="form-group">

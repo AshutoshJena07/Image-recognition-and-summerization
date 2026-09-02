@@ -1,4 +1,11 @@
 import React, { useState } from 'react';
+import {
+  Volume2Icon,
+  SquareIcon,
+  CopyIcon,
+  CheckIcon,
+  PaperclipIcon
+} from '../Common/Icons';
 
 export default function ChatMessage({ message, onSpeak, isSpeakingThis }) {
   const { role, text, imageUrl, fileBadge, error, typing } = message;
@@ -29,22 +36,11 @@ export default function ChatMessage({ message, onSpeak, isSpeakingThis }) {
           <div className="message-sender">
             <span>{isBot ? 'Assistant' : 'You'}</span>
             {isBot && !typing && (
-              <span 
-                className="message-meta" 
-                style={{ 
-                  fontSize: '9.5px', 
-                  background: 'var(--bg-surface)', 
-                  padding: '2px 8px', 
-                  borderRadius: 'var(--radius-xs)', 
-                  border: '1px solid var(--border-subtle)', 
-                  marginLeft: '8px',
-                  fontWeight: 600
-                }}
-              >
+              <span className="model-engine-badge">
                 Local VLM Engine
               </span>
             )}
-            <span className="message-meta" style={{ marginLeft: '6px' }}>• {displayTime}</span>
+            <span className="message-meta message-timestamp">• {displayTime}</span>
           </div>
 
           {isBot && !typing && (
@@ -57,7 +53,17 @@ export default function ChatMessage({ message, onSpeak, isSpeakingThis }) {
                 title={isSpeakingThis ? "Stop reading response" : "Read response aloud"}
                 style={{ color: isSpeakingThis ? 'var(--accent-primary)' : 'inherit', fontWeight: isSpeakingThis ? '700' : '600' }}
               >
-                {isSpeakingThis ? '⏹ Stop' : '🔊 Read'}
+                {isSpeakingThis ? (
+                  <>
+                    <SquareIcon size={12} />
+                    <span>Stop</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2Icon size={12} />
+                    <span>Read</span>
+                  </>
+                )}
               </button>
 
               {/* Copy button */}
@@ -67,7 +73,17 @@ export default function ChatMessage({ message, onSpeak, isSpeakingThis }) {
                 onClick={handleCopy}
                 title="Copy response text"
               >
-                {copied ? '✓ Copied' : '📋 Copy'}
+                {copied ? (
+                  <>
+                    <CheckIcon size={12} />
+                    <span>Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <CopyIcon size={12} />
+                    <span>Copy</span>
+                  </>
+                )}
               </button>
             </div>
           )}
@@ -76,7 +92,8 @@ export default function ChatMessage({ message, onSpeak, isSpeakingThis }) {
         {/* Display attachment badge for user documents */}
         {fileBadge && (
           <div className="message-badge">
-            📎 {fileBadge}
+            <PaperclipIcon size={12} />
+            <span>{fileBadge}</span>
           </div>
         )}
 

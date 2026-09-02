@@ -1,25 +1,24 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useTheme } from '../../context/ThemeContext';
+import React from 'react';
 import {
   MenuIcon,
   PanelLeftOpenIcon,
-  PanelLeftCloseIcon,
   Volume2Icon,
   VolumeXIcon,
   SlidersIcon,
-  SunIcon,
-  MoonIcon,
-  MonitorIcon,
-  CheckIcon,
-  ChevronDownIcon,
-  LayoutDashboardIcon
+  LayoutDashboardIcon,
+  HistoryIcon
 } from '../Common/Icons';
+import ThemeDropdown from '../Common/ThemeDropdown';
 
 export default function TopBar({
   isSidebarOpen,
   setIsSidebarOpen,
   isSidebarCollapsed,
   setIsSidebarCollapsed,
+  isSidebarHidden,
+  setIsSidebarHidden,
+  isHistoryOpen,
+  setIsHistoryOpen,
   autoSpeak,
   setAutoSpeak,
   isSettingsOpen,
@@ -29,42 +28,6 @@ export default function TopBar({
   user,
   guestMode
 }) {
-  const { theme, setTheme, resolvedTheme } = useTheme();
-  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
-  const themeMenuRef = useRef(null);
-
-  // Close theme dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target)) {
-        setIsThemeMenuOpen(false);
-      }
-    };
-    if (isThemeMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isThemeMenuOpen]);
-
-  const handleSelectTheme = (selected) => {
-    setTheme(selected);
-    setIsThemeMenuOpen(false);
-  };
-
-  const getThemeIcon = () => {
-    if (theme === 'system') return <MonitorIcon size={16} />;
-    if (theme === 'light') return <SunIcon size={16} />;
-    return <MoonIcon size={16} />;
-  };
-
-  const getThemeLabel = () => {
-    if (theme === 'system') return 'System';
-    if (theme === 'light') return 'Light';
-    return 'Dark';
-  };
-
   return (
     <header className="topbar" aria-label="Application Header">
       {/* 1. Left Cluster: Sidebar Controls & Context */}
@@ -79,8 +42,20 @@ export default function TopBar({
           <MenuIcon size={20} />
         </button>
 
-        {/* Desktop Collapsed Sidebar quick-expand trigger (visible when sidebar is collapsed) */}
-        {isSidebarCollapsed && (
+        {/* Restore Left Sidebar button (visible when sidebar is hidden) */}
+        {isSidebarHidden && (
+          <button
+            className="icon-btn topbar-sidebar-toggle"
+            onClick={() => setIsSidebarHidden(false)}
+            aria-label="Restore Left Sidebar (Ctrl+B)"
+            title="Restore Left Sidebar (Ctrl+B)"
+          >
+            <PanelLeftOpenIcon size={18} />
+          </button>
+        )}
+
+        {/* Desktop Collapsed Sidebar quick-expand trigger (visible when sidebar is collapsed and not hidden) */}
+        {!isSidebarHidden && isSidebarCollapsed && (
           <button
             className="icon-btn topbar-sidebar-toggle"
             onClick={() => setIsSidebarCollapsed(false)}
@@ -113,7 +88,7 @@ export default function TopBar({
         </div>
       </div>
 
-      {/* 2. Right Cluster: Controls & Appearance */}
+      {/* 2. Right Cluster: Controls, History & Appearance */}
       <div className="topbar-right">
         {/* Dashboard shortcut link for authenticated users */}
         {!guestMode && (
@@ -154,63 +129,22 @@ export default function TopBar({
           <span className="action-btn-text">Voice Studio</span>
         </button>
 
+        {/* Right-side Conversation History Toggle */}
+        <button
+          id="history-panel-toggle"
+          className={`topbar-action-btn ${isHistoryOpen ? 'active' : ''}`}
+          type="button"
+          aria-expanded={isHistoryOpen}
+          onClick={() => setIsHistoryOpen && setIsHistoryOpen(!isHistoryOpen)}
+          title={isHistoryOpen ? "Hide Conversation History" : "Show Conversation History"}
+          aria-label="Conversation History"
+        >
+          <HistoryIcon size={16} />
+          <span className="action-btn-text">History</span>
+        </button>
+
         {/* Professional 3-Mode Theme Selector Dropdown */}
-        <div className="theme-selector-container" ref={themeMenuRef}>
-          <button
-            className={`topbar-action-btn theme-dropdown-btn ${isThemeMenuOpen ? 'active' : ''}`}
-            type="button"
-            aria-haspopup="true"
-            aria-expanded={isThemeMenuOpen}
-            onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
-            title={`Current theme: ${getThemeLabel()} (Click to change)`}
-          >
-            {getThemeIcon()}
-            <span className="action-btn-text">{getThemeLabel()}</span>
-            <ChevronDownIcon size={14} className={`dropdown-chevron ${isThemeMenuOpen ? 'open' : ''}`} />
-          </button>
-
-          {isThemeMenuOpen && (
-            <div className="theme-dropdown-menu" role="menu" aria-label="Theme selection menu">
-              <div className="theme-menu-header">Appearance</div>
-              
-              <button
-                className={`theme-menu-item ${theme === 'light' ? 'selected' : ''}`}
-                role="menuitem"
-                onClick={() => handleSelectTheme('light')}
-              >
-                <div className="theme-item-left">
-                  <SunIcon size={16} />
-                  <span>Light</span>
-                </div>
-                {theme === 'light' && <CheckIcon size={16} className="check-mark" />}
-              </button>
-
-              <button
-                className={`theme-menu-item ${theme === 'dark' ? 'selected' : ''}`}
-                role="menuitem"
-                onClick={() => handleSelectTheme('dark')}
-              >
-                <div className="theme-item-left">
-                  <MoonIcon size={16} />
-                  <span>Dark</span>
-                </div>
-                {theme === 'dark' && <CheckIcon size={16} className="check-mark" />}
-              </button>
-
-              <button
-                className={`theme-menu-item ${theme === 'system' ? 'selected' : ''}`}
-                role="menuitem"
-                onClick={() => handleSelectTheme('system')}
-              >
-                <div className="theme-item-left">
-                  <MonitorIcon size={16} />
-                  <span>System</span>
-                </div>
-                {theme === 'system' && <CheckIcon size={16} className="check-mark" />}
-              </button>
-            </div>
-          )}
-        </div>
+        <ThemeDropdown />
       </div>
     </header>
   );

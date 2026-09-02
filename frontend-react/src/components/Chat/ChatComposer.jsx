@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import FileUploaderUI from './FileUploaderUI';
+import { PaperclipIcon, ArrowUpIcon } from '../Common/Icons';
 
 export default function ChatComposer({ 
   prompt, 
@@ -81,7 +82,7 @@ export default function ChatComposer({
 
             {/* Attach button */}
             <button 
-              className="composer-btn"
+              className="composer-btn attach-btn"
               type="button"
               onClick={handleAttachClick}
               disabled={isAnalyzing}
@@ -89,7 +90,7 @@ export default function ChatComposer({
               title="Attach File (Image, Video, Document, Code)"
               aria-label="Attach file"
             >
-              📎
+              <PaperclipIcon size={16} />
             </button>
 
             {/* Input textarea */}
@@ -113,8 +114,9 @@ export default function ChatComposer({
                 onClick={handleSend}
                 disabled={isSendDisabled}
                 aria-label="Send message query"
+                title="Send message"
               >
-                ↑
+                <ArrowUpIcon size={16} />
               </button>
             </div>
           </div>

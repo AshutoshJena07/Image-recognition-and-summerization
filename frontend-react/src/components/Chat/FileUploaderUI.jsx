@@ -1,4 +1,11 @@
 import React from 'react';
+import {
+  ImageIcon,
+  FileTextIcon,
+  LayoutDashboardIcon,
+  SparklesIcon,
+  XIcon
+} from '../Common/Icons';
 
 export default function FileUploaderUI({ activeFile, onRemove }) {
   if (!activeFile) return null;
@@ -19,38 +26,25 @@ export default function FileUploaderUI({ activeFile, onRemove }) {
     return `${(sizeInKB / 1024).toFixed(1)} MB`;
   };
 
-  // Select icon helper based on mime type
+  // Select SVG icon helper based on mime type
   const getFileIcon = () => {
-    if (type.startsWith('video/')) return '🎥';
-    if (type.includes('pdf')) return '📕';
-    if (type.includes('sheet') || type.includes('excel') || name.endsWith('.csv')) return '📊';
-    if (type.includes('word') || type.includes('document')) return '📘';
-    if (type.includes('presentation') || type.includes('powerpoint')) return '📙';
-    return '📄';
+    if (type.startsWith('video/')) return <SparklesIcon size={15} />;
+    if (type.includes('sheet') || type.includes('excel') || name.endsWith('.csv')) return <LayoutDashboardIcon size={15} />;
+    if (isImage) return <ImageIcon size={15} />;
+    return <FileTextIcon size={15} />;
   };
 
   return (
     <div className="file-previews-container">
       <div className="preview-card">
-        {isImage ? (
+        {isImage && previewUrl ? (
           <img 
             className="preview-thumbnail" 
             src={previewUrl} 
             alt="Selected upload preview" 
           />
         ) : (
-          <div 
-            style={{ 
-              fontSize: '16px', 
-              display: 'grid', 
-              placeItems: 'center', 
-              width: '28px', 
-              height: '28px', 
-              background: 'var(--bg-surface-hover)', 
-              borderRadius: 'var(--radius-xs)', 
-              border: '1px solid var(--border-default)' 
-            }}
-          >
+          <div className="preview-icon-wrap">
             {getFileIcon()}
           </div>
         )}
@@ -59,8 +53,8 @@ export default function FileUploaderUI({ activeFile, onRemove }) {
           <span className="preview-filename" title={name}>
             {name}
           </span>
-          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-            {fileExt} File • {getFileSizeLabel()}
+          <span className="preview-meta">
+            {fileExt} • {getFileSizeLabel()}
           </span>
         </div>
 
@@ -69,8 +63,9 @@ export default function FileUploaderUI({ activeFile, onRemove }) {
           type="button" 
           onClick={onRemove}
           aria-label="Remove attached file"
+          title="Remove attached file"
         >
-          ×
+          <XIcon size={13} />
         </button>
       </div>
     </div>

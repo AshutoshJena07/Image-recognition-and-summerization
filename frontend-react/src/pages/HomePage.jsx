@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import ThemeDropdown from '../components/Common/ThemeDropdown';
+import {
+  FileTextIcon,
+  LayoutDashboardIcon,
+  Volume2Icon,
+  ArrowRightIcon
+} from '../components/Common/Icons';
 
 export default function HomePage({ navigate }) {
   const { token, enterGuestMode } = useAuth();
@@ -29,22 +36,27 @@ export default function HomePage({ navigate }) {
     <div className="landing-shell">
       {/* Navigation Header */}
       <header className="landing-nav">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="brand-mark">✦</span>
-          <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '18px', color: 'var(--text-primary)' }}>
+        <div className="landing-nav-brand" onClick={() => navigate('#/')}>
+          <span className="brand-mark-sm">✦</span>
+          <span className="landing-brand-name">
             Multimodal AI
           </span>
         </div>
-        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+        
+        <div className="landing-nav-actions">
           <a href="#features" className="landing-nav-link">Features</a>
           <a href="#specs" className="landing-nav-link">Specifications</a>
+          
+          {/* Global Theme Selector Popover */}
+          <ThemeDropdown />
+
           {token ? (
             <button className="landing-btn-primary" onClick={() => navigate('#/dashboard')}>
-              Go to Dashboard
+              Dashboard
             </button>
           ) : (
             <>
-              <button className="landing-nav-link" onClick={() => navigate('#/login')} style={{ background: 'none', border: 0, cursor: 'pointer' }}>
+              <button className="landing-nav-link landing-signin-btn" onClick={() => navigate('#/login')}>
                 Sign In
               </button>
               <button className="landing-btn-primary" onClick={() => navigate('#/signup')}>
@@ -63,7 +75,7 @@ export default function HomePage({ navigate }) {
           </div>
           <h1 className="landing-title">
             Intelligent Image Recognition <br />
-            <span style={{ background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <span className="landing-title-gradient">
               & Summarization Workspace
             </span>
           </h1>
@@ -71,10 +83,11 @@ export default function HomePage({ navigate }) {
             Upload files, extract high-fidelity text with EasyOCR, and prompt offline local LLMs inside a private environment. Zero data leakage, full audio narration.
           </p>
 
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
+          <div className="landing-cta-row">
             {token ? (
               <button className="landing-btn-hero" onClick={() => navigate('#/dashboard')}>
-                Enter Dashboard ➜
+                <span>Enter Dashboard</span>
+                <ArrowRightIcon size={14} />
               </button>
             ) : (
               <>
@@ -90,25 +103,25 @@ export default function HomePage({ navigate }) {
         </div>
 
         {/* Floating Cognitive Orb Graphic */}
-        <div className="welcome-orb" style={{ width: '100px', height: '100px', fontSize: '28px', margin: '40px auto 20px auto' }}>
+        <div className="welcome-orb">
           ✦
         </div>
       </section>
 
       {/* Live Interactive Sandbox Preview */}
-      <section id="sandbox" className="landing-section">
+      <section id="features" className="landing-section">
         <div className="landing-inner">
           <h2 className="section-title">Experience the AI Assistant</h2>
           <p className="section-subtitle">Click a capabilities preview preset below to witness the local models segment, extract, and analyze in real time.</p>
 
           <div className="sandbox-card">
             <div className="sandbox-preview-header">
-              <div style={{ display: 'flex', gap: '5px' }}>
+              <div className="sandbox-dots-wrap">
                 <span className="dot red"></span>
                 <span className="dot yellow"></span>
                 <span className="dot green"></span>
               </div>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>sandbox-simulation.local</span>
+              <span className="sandbox-header-label">sandbox-simulation.local</span>
             </div>
             
             <div className="sandbox-body">
@@ -122,12 +135,12 @@ export default function HomePage({ navigate }) {
                 {sandboxAnswer ? (
                   <div className="sandbox-response">
                     <strong>Assistant Response:</strong>
-                    <div style={{ marginTop: '8px', lineHeight: 1.55 }}>{sandboxAnswer}</div>
+                    <div className="sandbox-response-text">{sandboxAnswer}</div>
                   </div>
                 ) : isTyping ? (
                   <div className="sandbox-loading-pulse">Analyzing attached document...</div>
                 ) : (
-                  <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '13px' }}>
+                  <div className="sandbox-empty-prompt">
                     Select a preview option below to start simulation...
                   </div>
                 )}
@@ -143,7 +156,8 @@ export default function HomePage({ navigate }) {
                   '[OCR Scan Results]\n- Merchant: Local Market Store\n- Total Amount: $42.50\n- Date: August 29, 2026\n- Items: Milk ($3.20), Fresh Berries ($6.50), Coffee Beans ($12.80), Artisan Bread ($5.00)'
                 )}
               >
-                📝 Document OCR Scan
+                <FileTextIcon size={13} />
+                <span>Document OCR Scan</span>
               </button>
               <button 
                 className="sandbox-preset-btn" 
@@ -153,7 +167,8 @@ export default function HomePage({ navigate }) {
                   '[Multimodal Vision Analysis]\n- Identified: A 3-table entity relation mapping schema.\n- Target Tables: users, sessions, conversations.\n- Relationships: users.id has foreign key bounds on sessions.user_id and conversations.user_id.'
                 )}
               >
-                📊 Schema Diagram Analysis
+                <LayoutDashboardIcon size={13} />
+                <span>Schema Diagram Analysis</span>
               </button>
               <button 
                 className="sandbox-preset-btn" 
@@ -163,15 +178,17 @@ export default function HomePage({ navigate }) {
                   '[Cartesia Voice Synthesis Segment: HAPPY]\nSpeech is synthesized at 44.1kHz sample rate with sonic-3.6. Sound output has been successfully mapped to natural audio channels.'
                 )}
               >
-                🔊 Speech Synthesis Play
+                <Volume2Icon size={13} />
+                <span>Speech Synthesis Play</span>
               </button>
             </div>
           </div>
         </div>
       </section>
 
+
       {/* Specifications & Blueprint */}
-      <section id="specs" className="landing-section" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+      <section id="specs" className="landing-section landing-section-bordered">
         <div className="landing-inner">
           <h2 className="section-title">Technical Specifications</h2>
           <p className="section-subtitle">Fully local data residency paired with standard acceleration backends.</p>

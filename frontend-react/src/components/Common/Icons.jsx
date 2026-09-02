@@ -220,3 +220,111 @@ export const ChevronRightIcon = ({ size = 18, strokeWidth = 1.85, className = ''
     <path d="m9 18 6-6-6-6" />
   </svg>
 );
+
+export const HistoryIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+export const SquareIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <rect width="16" height="16" x="4" y="4" rx="2" />
+  </svg>
+);
+
+export const PanelRightCloseIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <rect width="18" height="18" x="3" y="3" rx="2" />
+    <path d="M15 3v18" />
+    <path d="m10 9 3 3-3 3" />
+  </svg>
+);
+
+export const PanelRightOpenIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <rect width="18" height="18" x="3" y="3" rx="2" />
+    <path d="M15 3v18" />
+    <path d="m9 15-3-3 3-3" />
+  </svg>
+);
+
+export const PanelLeftIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <rect width="18" height="18" x="3" y="3" rx="2" />
+    <path d="M9 3v18" />
+  </svg>
+);
+
+export const PanelRightIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <rect width="18" height="18" x="3" y="3" rx="2" />
+    <path d="M15 3v18" />
+  </svg>
+);
+
+export const ArrowRightIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <path d="M5 12h14" />
+    <path d="m12 5 7 7-7 7" />
+  </svg>
+);
+
+export const ArrowLeftIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <path d="M19 12H5" />
+    <path d="m12 19-7-7 7-7" />
+  </svg>
+);
+
+export const AlertCircleIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" x2="12" y1="8" y2="12" />
+    <line x1="12" x2="12.01" y1="16" y2="16" />
+  </svg>
+);
+
+export const AlertTriangleIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+    <line x1="12" x2="12" y1="9" y2="13" />
+    <line x1="12" x2="12.01" y1="17" y2="17" />
+  </svg>
+);
+
+export const CheckCircleIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
+);
+
+export const FolderIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+  </svg>
+);
+
+export const PlayIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <polygon points="5 3 19 12 5 21 5 3" />
+  </svg>
+);
+
+export const PauseIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <rect width="4" height="16" x="6" y="4" />
+    <rect width="4" height="16" x="14" y="4" />
+  </svg>
+);
+
+export const UploadCloudIcon = ({ size = 18, strokeWidth = 1.85, className = '' }) => (
+  <svg {...baseIconProps(size, strokeWidth, className)}>
+    <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+    <path d="M12 12v9" />
+    <path d="m16 16-4-4-4 4" />
+  </svg>
+);
+

@@ -1,27 +1,33 @@
 import React from 'react';
+import {
+  ImageIcon,
+  FileTextIcon,
+  LayoutDashboardIcon,
+  SparklesIcon
+} from '../Common/Icons';
 
 export default function WelcomeScreen({ onSelectSuggestion }) {
   const suggestions = [
     {
-      icon: '🖼️',
+      icon: <ImageIcon size={16} />,
       title: 'Visual Summarization',
       desc: 'Describe this image in detail and list all notable visual features.',
       prompt: 'Describe this image in detail'
     },
     {
-      icon: '📝',
+      icon: <FileTextIcon size={16} />,
       title: 'Document OCR Reader',
       desc: 'Extract handwritten notes, signatures, or printed text via local OCR.',
       prompt: 'Extract text via OCR'
     },
     {
-      icon: '📊',
+      icon: <LayoutDashboardIcon size={16} />,
       title: 'Structured Table Analytics',
       desc: 'Parse columns, row stats, and data summaries from active sheets.',
       prompt: 'Summarize key columns and data details'
     },
     {
-      icon: '🎥',
+      icon: <SparklesIcon size={16} />,
       title: 'Video Midpoint Analysis',
       desc: 'Examine duration, frame counts, and describe the midpoint sampled frame.',
       prompt: 'Analyze this video midpoint frame and details'
@@ -45,7 +51,9 @@ export default function WelcomeScreen({ onSelectSuggestion }) {
             type="button"
             onClick={() => onSelectSuggestion(card.prompt)}
           >
-            <div style={{ fontSize: '20px', marginBottom: '8px' }}>{card.icon}</div>
+            <div className="suggestion-card-icon-wrap" style={{ color: 'var(--accent-primary)', marginBottom: '4px' }}>
+              {card.icon}
+            </div>
             <div className="suggestion-card-title">{card.title}</div>
             <div className="suggestion-card-desc">{card.desc}</div>
           </button>

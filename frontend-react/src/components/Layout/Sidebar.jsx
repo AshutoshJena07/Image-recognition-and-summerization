@@ -17,6 +17,8 @@ export default function Sidebar({
   setIsOpen,
   isCollapsed,
   setIsCollapsed,
+  isHidden,
+  setIsHidden,
   onNewSession,
   conversationsList = [],
   activeSessionId,
@@ -36,6 +38,12 @@ export default function Sidebar({
     setIsCollapsed(prev => !prev);
   };
 
+  const handleHideSidebar = () => {
+    if (setIsHidden) {
+      setIsHidden(true);
+    }
+  };
+
   const handleNewSessionClick = () => {
     if (onNewSession) onNewSession();
     if (isOpen) setIsOpen(false);
@@ -48,7 +56,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`sidebar ${isOpen ? 'open' : ''} ${isCollapsed ? 'collapsed' : ''}`}
+      className={`sidebar ${isOpen ? 'open' : ''} ${isCollapsed ? 'collapsed' : ''} ${isHidden ? 'hidden' : ''}`}
       aria-label="Main Navigation Sidebar"
     >
       {/* 1. Header / Brand & Collapse Toggle */}
@@ -77,7 +85,7 @@ export default function Sidebar({
           )}
         </div>
 
-        {/* Desktop Collapse Toggle / Mobile Close */}
+        {/* Desktop Collapse / Hide Toggle / Mobile Close */}
         <div className="sidebar-header-actions">
           {/* Mobile close button */}
           <button
@@ -93,11 +101,23 @@ export default function Sidebar({
           <button
             className="icon-btn desktop-collapse-btn"
             onClick={handleToggleCollapse}
-            aria-label={isCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
-            title={isCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? <PanelLeftOpenIcon size={18} /> : <PanelLeftCloseIcon size={18} />}
           </button>
+
+          {/* Desktop sidebar hide toggle */}
+          {!isCollapsed && (
+            <button
+              className="icon-btn desktop-hide-btn"
+              onClick={handleHideSidebar}
+              aria-label="Hide sidebar (Ctrl+B to restore)"
+              title="Hide sidebar (Ctrl+B to restore)"
+            >
+              <XIcon size={15} />
+            </button>
+          )}
         </div>
       </div>
 

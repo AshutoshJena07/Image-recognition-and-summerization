@@ -2,6 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { fetchConversations, deleteConversation, checkHealth } from '../services/api';
 import { validateFileExtension } from '../utils/fileValidation';
+import ThemeDropdown from '../components/Common/ThemeDropdown';
+import {
+  PaperclipIcon,
+  ImageIcon,
+  FileTextIcon,
+  Volume2Icon,
+  FolderIcon,
+  Trash2Icon,
+  PlusIcon,
+  LogOutIcon
+} from '../components/Common/Icons';
 
 export default function DashboardPage({ navigate, onNewSessionWithFile, onNewSessionWithPrompt }) {
   const { token, user, logout } = useAuth();
@@ -84,25 +95,28 @@ export default function DashboardPage({ navigate, onNewSessionWithFile, onNewSes
     <div className="dash-shell">
       {/* Dashboard Top bar */}
       <header className="dash-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="brand-mark">✦</span>
-          <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '16px', color: 'var(--text-primary)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => navigate('#/dashboard')}>
+          <span className="brand-mark-sm">✦</span>
+          <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '14px', color: 'var(--text-primary)' }}>
             Multimodal Center
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {/* Server status indicator */}
           <div className="dash-server-badge">
             <span className={`status-dot ${serverStatus}`} />
             <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>{serverStatus}</span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '11.5px' }}>
+          <ThemeDropdown />
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '11px', paddingRight: '4px' }}>
             <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{user?.email || 'Logged In'}</span>
-            <span style={{ color: 'var(--text-muted)' }}>User Account</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: '9.5px' }}>User Account</span>
           </div>
-          <button onClick={logout} className="toggle-button" style={{ borderColor: 'var(--status-error-border)', color: 'var(--status-offline)' }}>
-            Sign Out
+          <button onClick={logout} className="toggle-button" style={{ borderColor: 'var(--status-error-border)', color: 'var(--status-offline)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <LogOutIcon size={13} />
+            <span>Sign Out</span>
           </button>
         </div>
       </header>
@@ -111,10 +125,10 @@ export default function DashboardPage({ navigate, onNewSessionWithFile, onNewSes
       <main className="dash-body">
         {/* Banner greeting */}
         <section className="dash-welcome">
-          <h1 style={{ fontSize: '28px', fontFamily: 'var(--font-heading)', fontWeight: 800, color: 'var(--text-primary)' }}>
+          <h1 style={{ fontSize: '21px', fontFamily: 'var(--font-heading)', fontWeight: 800, color: 'var(--text-primary)' }}>
             Hello, {user?.email?.split('@')[0] || 'User'}
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '3px' }}>
             Welcome to your private local reasoning dashboard. Evolve past simple captioning.
           </p>
         </section>
@@ -127,12 +141,14 @@ export default function DashboardPage({ navigate, onNewSessionWithFile, onNewSes
             onDragOver={handleDragOver}
             onDrop={handleDrop}
           >
-            <div style={{ fontSize: '32px', marginBottom: '8px' }}>📎</div>
-            <h3 style={{ color: 'var(--text-primary)', fontSize: '16px', fontWeight: 700 }}>Quick Launch File Session</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '12.5px', marginTop: '4px', textAlign: 'center', maxWidth: '320px' }}>
+            <div style={{ color: 'var(--accent-primary)', marginBottom: '8px' }}>
+              <PaperclipIcon size={24} />
+            </div>
+            <h3 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700 }}>Quick Launch File Session</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '11.5px', marginTop: '4px', textAlign: 'center', maxWidth: '320px', lineHeight: 1.4 }}>
               Drag and drop any image, video, PDF, Word, Excel, or code file here to open workspace immediately.
             </p>
-            <label className="dash-upload-label" style={{ marginTop: '16px' }}>
+            <label className="dash-upload-label" style={{ marginTop: '12px' }}>
               Browse Files
               <input type="file" onChange={handleFileChange} hidden />
             </label>
@@ -140,7 +156,7 @@ export default function DashboardPage({ navigate, onNewSessionWithFile, onNewSes
 
           {/* Prompt template triggers */}
           <div className="dash-templates-card">
-            <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: '12px', fontWeight: 700 }}>
+            <h3 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: '10px', fontWeight: 700 }}>
               Workspace Presets
             </h3>
             <div className="dash-presets-list">
@@ -148,21 +164,30 @@ export default function DashboardPage({ navigate, onNewSessionWithFile, onNewSes
                 className="dash-preset-card" 
                 onClick={() => onNewSessionWithPrompt('Describe this image in detailed paragraphs, identifying all characters and items.')}
               >
-                <h4>🖼️ Deep Image Reasoning</h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                  <ImageIcon size={14} style={{ color: 'var(--accent-primary)' }} />
+                  <h4>Deep Image Reasoning</h4>
+                </div>
                 <p>Detailed semantic details and environment captioning.</p>
               </button>
               <button 
                 className="dash-preset-card" 
                 onClick={() => onNewSessionWithPrompt('Scan this document, perform OCR, and return a clean text transcription.')}
               >
-                <h4>📄 Document OCR Transcription</h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                  <FileTextIcon size={14} style={{ color: 'var(--accent-primary)' }} />
+                  <h4>Document OCR Transcription</h4>
+                </div>
                 <p>Extract strings, tables, receipts, or screenshots.</p>
               </button>
               <button 
                 className="dash-preset-card" 
                 onClick={() => onNewSessionWithPrompt('Read this script line and perform Text-to-Speech synthesis with emotional voice settings.')}
               >
-                <h4>🔊 Speech Studio Synthesis</h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                  <Volume2Icon size={14} style={{ color: 'var(--accent-primary)' }} />
+                  <h4>Speech Studio Synthesis</h4>
+                </div>
                 <p>Synthesize narration using emotional voice clips.</p>
               </button>
             </div>
@@ -170,29 +195,32 @@ export default function DashboardPage({ navigate, onNewSessionWithFile, onNewSes
         </div>
 
         {/* Recent runs workspace listing */}
-        <section style={{ marginTop: '36px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '18px', fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--text-primary)' }}>
+        <section style={{ marginTop: '30px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <h2 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--text-primary)' }}>
               Recent Workspace Runs
             </h2>
-            <button className="new-chat-btn" style={{ width: 'auto', padding: '8px 16px' }} onClick={() => navigate('#/workspace')}>
-              ＋ New Workspace
+            <button className="new-chat-btn" style={{ width: 'auto', padding: '6px 14px', fontSize: '11.5px' }} onClick={() => navigate('#/workspace')}>
+              <PlusIcon size={14} />
+              <span>New Workspace</span>
             </button>
           </div>
 
           {loading ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
+            <div style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
               Synchronizing active database sessions...
             </div>
           ) : errorMsg ? (
-            <div style={{ padding: '20px', background: 'var(--status-error-bg)', border: '1px solid var(--status-error-border)', borderRadius: 'var(--radius-md)', color: 'var(--status-offline)' }}>
+            <div style={{ padding: '16px', background: 'var(--status-error-bg)', border: '1px solid var(--status-error-border)', borderRadius: 'var(--radius-md)', color: 'var(--status-offline)' }}>
               {errorMsg}
             </div>
           ) : conversations.length === 0 ? (
             <div className="dash-empty-state">
-              <span style={{ fontSize: '36px', display: 'block', marginBottom: '8px' }}>📁</span>
+              <div style={{ color: 'var(--text-muted)', opacity: 0.6, marginBottom: '6px' }}>
+                <FolderIcon size={32} />
+              </div>
               <h3>No past runs detected</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '3px' }}>
                 You haven't run any private analyses yet. Launch a session or drop a file to start!
               </p>
             </div>
@@ -205,24 +233,25 @@ export default function DashboardPage({ navigate, onNewSessionWithFile, onNewSes
                   onClick={() => navigate(`#/workspace/${conv.id}`)}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: '18px' }}>📄</span>
+                    <FileTextIcon size={16} style={{ color: 'var(--accent-primary)' }} />
                     <button 
                       onClick={(e) => handleDelete(e, conv.id)}
                       className="dash-card-delete-btn"
                       title="Delete Run"
                     >
-                      ×
+                      <Trash2Icon size={13} />
                     </button>
                   </div>
-                  <h3 className="dash-card-title" style={{ marginTop: '12px' }}>{conv.title}</h3>
+                  <h3 className="dash-card-title" style={{ marginTop: '10px' }}>{conv.title}</h3>
                   <div style={{ flex: 1 }} />
-                  <div className="dash-card-footer" style={{ marginTop: '16px' }}>
+                  <div className="dash-card-footer" style={{ marginTop: '14px' }}>
                     <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
                       Updated: {new Date(conv.updated_at).toLocaleDateString()}
                     </span>
                     {conv.attachments && conv.attachments.length > 0 && (
                       <span className="dash-card-attachment-badge">
-                        📎 {conv.attachments.length} attachment
+                        <PaperclipIcon size={10} style={{ marginRight: '3px' }} />
+                        {conv.attachments.length} {conv.attachments.length === 1 ? 'attachment' : 'attachments'}
                       </span>
                     )}
                   </div>
@@ -235,3 +264,4 @@ export default function DashboardPage({ navigate, onNewSessionWithFile, onNewSes
     </div>
   );
 }
+

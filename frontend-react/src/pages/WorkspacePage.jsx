@@ -2,11 +2,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import MainLayout from '../components/Layout/MainLayout';
 import ChatArea from '../components/Chat/ChatArea';
 import ChatComposer from '../components/Chat/ChatComposer';
-import { checkHealth, analyzeFile, fetchConversationDetail, saveConversation, fetchConversations } from '../services/api';
+import { checkHealth, analyzeFile, fetchConversationDetail, saveConversation, fetchConversations, deleteConversation } from '../services/api';
 import { validateFileExtension } from '../utils/fileValidation';
 import useSpeechSynthesis from '../hooks/useSpeechSynthesis';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { PlayIcon, PauseIcon, SquareIcon, XIcon } from '../components/Common/Icons';
+
 
 export default function WorkspacePage({ 
   navigate, 
@@ -412,6 +414,20 @@ export default function WorkspacePage({
     }
   };
 
+  // Delete conversation from database and list
+  const handleDeletePastConversation = useCallback(async (conversationIdToDelete) => {
+    if (!token || guestMode) return;
+    try {
+      await deleteConversation(conversationIdToDelete, token);
+      setConversationsList(prev => prev.filter(c => c.id !== conversationIdToDelete));
+      if (currentSessionId === conversationIdToDelete) {
+        handleNewSession();
+      }
+    } catch (err) {
+      console.error('Failed to delete past conversation:', err);
+    }
+  }, [token, guestMode, currentSessionId]);
+
   return (
     <MainLayout
       theme={theme}
@@ -426,6 +442,8 @@ export default function WorkspacePage({
       onNewSession={handleNewSession}
       conversationsList={conversationsList}
       activeSessionId={currentSessionId}
+      onSelectConversation={(id) => navigate(`#/workspace/${id}`)}
+      onDeleteConversation={handleDeletePastConversation}
       navigate={navigate}
       user={user}
       guestMode={guestMode}
@@ -441,13 +459,15 @@ export default function WorkspacePage({
 
       {/* Floating Settings Studio Drawer */}
       <div className={`settings-drawer ${isSettingsOpen ? 'open' : ''}`}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
-          <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Voice Studio Settings</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
+          <h3 style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)' }}>Voice Studio Settings</h3>
           <button 
             onClick={() => setIsSettingsOpen(false)}
-            style={{ background: 'transparent', border: 0, cursor: 'pointer', fontSize: '18px', color: 'var(--text-muted)' }}
+            className="icon-btn"
+            style={{ padding: '3px' }}
+            title="Close Voice Studio"
           >
-            ×
+            <XIcon size={14} />
           </button>
         </div>
 
@@ -520,10 +540,11 @@ export default function WorkspacePage({
               pitch: speechPitch
             });
           }}
-          style={{ width: '100%', justifyContent: 'center', marginTop: '12px', background: 'var(--bg-surface-hover)', color: 'var(--text-primary)' }}
+          style={{ width: '100%', justifyContent: 'center', marginTop: '10px', background: 'var(--bg-surface-hover)', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           disabled={!ttsSupported}
         >
-          ▶ Play Voice Preview
+          <PlayIcon size={12} />
+          <span>Play Voice Preview</span>
         </button>
 
         {/* Playback Controls Row */}
@@ -531,32 +552,36 @@ export default function WorkspacePage({
           <button 
             className="toggle-button"
             onClick={handlePlayActiveResponse}
-            style={{ flex: 1, justifyContent: 'center', fontSize: '11px', padding: '6px 0' }}
+            style={{ flex: 1, justifyContent: 'center', fontSize: '11px', padding: '5px 0', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             title="Play/Resume Audio"
             disabled={!ttsSupported}
           >
-            {isPaused ? '▶ Resume' : '▶ Play'}
+            <PlayIcon size={11} />
+            <span>{isPaused ? 'Resume' : 'Play'}</span>
           </button>
           <button 
             className="toggle-button"
             onClick={pause}
-            style={{ flex: 1, justifyContent: 'center', fontSize: '11px', padding: '6px 0' }}
+            style={{ flex: 1, justifyContent: 'center', fontSize: '11px', padding: '5px 0', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             title="Pause Audio"
             disabled={!ttsSupported || !isSpeaking || isPaused}
           >
-            ⏸ Pause
+            <PauseIcon size={11} />
+            <span>Pause</span>
           </button>
           <button 
             className="toggle-button"
             onClick={stopSpeech}
-            style={{ flex: 1, justifyContent: 'center', fontSize: '11px', padding: '6px 0' }}
+            style={{ flex: 1, justifyContent: 'center', fontSize: '11px', padding: '5px 0', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             title="Stop Audio"
             disabled={!ttsSupported || !isSpeaking}
           >
-            ⏹ Stop
+            <SquareIcon size={11} />
+            <span>Stop</span>
           </button>
         </div>
       </div>
+
 
       {/* Footer input text box composer */}
       <ChatComposer 
