@@ -1,0 +1,9 @@
+{
+  "name": "image-recognition-and-summerization",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend-react run dev",
+    "build": "npm --prefix frontend-react run build"
+  }
+}
